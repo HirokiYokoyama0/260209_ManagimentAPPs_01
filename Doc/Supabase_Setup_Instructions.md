@@ -231,9 +231,10 @@ CREATE POLICY "allow_public_update"
 `.env.local` ファイルを確認してください：
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://softoekutwlzivvfzooi.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+NEXT_PUBLIC_SUPABASE_URL=https://あなたのプロジェクト.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
+（実際の値は Supabase ダッシュボードの Settings → API で確認し、.env.local にのみ記載してください）
 
 ---
 

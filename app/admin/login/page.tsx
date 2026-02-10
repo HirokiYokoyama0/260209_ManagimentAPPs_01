@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error") === "invalid";
 
@@ -20,7 +21,6 @@ export default function AdminLoginPage() {
               id="username"
               name="username"
               type="text"
-              defaultValue="admin"
               autoComplete="username"
               required
             />
@@ -31,7 +31,6 @@ export default function AdminLoginPage() {
               id="password"
               name="password"
               type="password"
-              defaultValue="1234"
               autoComplete="current-password"
               required
             />
@@ -47,5 +46,13 @@ export default function AdminLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[80vh] flex items-center justify-center p-4">読み込み中...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -8,4 +8,6 @@ export type Profile = {
   last_visit_date: string | null;
   created_at: string;
   updated_at: string;
+  /** 公式アカウントの友だち登録済みか（Supabase の is_line_friend）。カラム未追加の場合は undefined */
+  is_line_friend?: boolean | null;
 };

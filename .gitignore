@@ -5,13 +5,14 @@ node_modules/
 .next/
 out/
 
-# 環境変数（秘密情報を含むため必ず除外）
+# 環境変数（秘密情報を含むため必ず除外・Vercel ではダッシュボードで設定）
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .env*.local
+!.env.example
 
 # ログ・デバッグ
 npm-debug.log*

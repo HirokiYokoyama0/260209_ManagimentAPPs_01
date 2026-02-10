@@ -33,6 +33,11 @@ export function PatientsTable() {
   const { data: profiles = [], error, mutate } = useSWR<Profile[]>("/api/profiles", fetcher);
   const [search, setSearch] = useState("");
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
+  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend";
+  const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
+    key: "updated_at",
+    direction: "desc",
+  });
 
   const filtered = useMemo(() => {
     if (!search.trim()) return profiles;
@@ -43,6 +48,52 @@ export function PatientsTable() {
         (p.ticket_number?.toLowerCase().includes(q))
     );
   }, [profiles, search]);
+
+  const sorted = useMemo(() => {
+    const data = [...filtered];
+    data.sort((a, b) => {
+      const dir = sort.direction === "asc" ? 1 : -1;
+      const get = (p: Profile): string | number => {
+        switch (sort.key) {
+          case "ticket_number":
+            return (p.ticket_number ?? "").toLowerCase();
+          case "stamp_count":
+            return p.stamp_count;
+          case "last_visit_date":
+            return p.last_visit_date ? Date.parse(p.last_visit_date) : 0;
+          case "updated_at":
+            return p.updated_at ? Date.parse(p.updated_at) : 0;
+          case "is_line_friend":
+            return p.is_line_friend ? 1 : 0;
+        }
+      };
+      const av = get(a);
+      const bv = get(b);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+    return data;
+  }, [filtered, sort]);
+
+  function handleSort(key: SortKey) {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  }
+
+  function renderSortIndicator(column: SortKey) {
+    if (sort.key !== column) {
+      return <span className="ml-1 text-xs text-slate-400">⇅</span>;
+    }
+    return (
+      <span className="ml-1 text-xs text-sky-600 font-semibold">
+        {sort.direction === "asc" ? "↑" : "↓"}
+      </span>
+    );
+  }
 
   async function updateStampDelta(id: string, delta: number) {
     const res = await fetch(`/api/profiles/${id}/stamp`, {
@@ -97,36 +148,83 @@ export function PatientsTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between gap-4">
         <Input
           placeholder="名前または診察券番号で検索"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm bg-white/80"
         />
+        <span className="hidden text-xs text-muted-foreground md:inline">
+          Supabase の `profiles` テーブルとリアルタイム連携しています。
+        </span>
       </div>
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border bg-white/90 shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-slate-50/80">
               <TableHead>氏名</TableHead>
-              <TableHead>診察券番号</TableHead>
-              <TableHead>スタンプ数</TableHead>
-              <TableHead>最終来院</TableHead>
-              <TableHead>更新</TableHead>
+              <TableHead
+                onClick={() => handleSort("ticket_number")}
+                className="cursor-pointer select-none"
+              >
+                <span className="inline-flex items-center gap-1">
+                  診察券番号
+                  {renderSortIndicator("ticket_number")}
+                </span>
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort("stamp_count")}
+                className="cursor-pointer select-none"
+              >
+                <span className="inline-flex items-center gap-1">
+                  スタンプ数
+                  {renderSortIndicator("stamp_count")}
+                </span>
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort("last_visit_date")}
+                className="cursor-pointer select-none"
+              >
+                <span className="inline-flex items-center gap-1">
+                  最終来院
+                  {renderSortIndicator("last_visit_date")}
+                </span>
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort("updated_at")}
+                className="cursor-pointer select-none"
+              >
+                <span className="inline-flex items-center gap-1">
+                  最新ログイン
+                  {renderSortIndicator("updated_at")}
+                </span>
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort("is_line_friend")}
+                className="cursor-pointer select-none"
+              >
+                <span className="inline-flex items-center gap-1">
+                  公式アカ友だち
+                  {renderSortIndicator("is_line_friend")}
+                </span>
+              </TableHead>
               <TableHead className="w-[300px]">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   {profiles.length === 0 ? "患者データがありません。" : "該当する患者がいません。"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((p) => (
-                <TableRow key={p.id}>
+              sorted.map((p) => (
+                <TableRow
+                  key={p.id}
+                  className="hover:bg-slate-50/80 transition-colors"
+                >
                   <TableCell className="font-medium">
                     {p.display_name || "—"}
                   </TableCell>
@@ -141,8 +239,15 @@ export function PatientsTable() {
                   <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                     {p.last_visit_date ? formatJst(p.last_visit_date) : "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap" title="最新ログイン">
                     {formatJst(p.updated_at)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {p.is_line_friend === true ? (
+                      <span className="text-emerald-600 font-medium" title="公式アカウントの友だち登録済み">〇 済</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 flex-wrap">
