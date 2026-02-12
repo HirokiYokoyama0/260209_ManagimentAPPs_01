@@ -7,12 +7,13 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { ticket_number, last_visit_date } = body as {
+  const { ticket_number, last_visit_date, view_mode } = body as {
     ticket_number?: string | null;
     last_visit_date?: string | null;
+    view_mode?: string | null;
   };
 
-  const updates: { ticket_number?: string | null; last_visit_date?: string | null; updated_at?: string } = {
+  const updates: { ticket_number?: string | null; last_visit_date?: string | null; view_mode?: string | null; updated_at?: string } = {
     updated_at: new Date().toISOString(),
   };
 
@@ -28,6 +29,9 @@ export async function PATCH(
         updates.last_visit_date = new Date(dateStr.slice(0, 10) + "T00:00:00+09:00").toISOString();
       }
     }
+  }
+  if (view_mode !== undefined) {
+    updates.view_mode = view_mode === "" ? null : String(view_mode);
   }
 
   const supabase = await createSupabaseServerClient();

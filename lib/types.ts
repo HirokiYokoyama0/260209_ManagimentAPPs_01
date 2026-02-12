@@ -10,4 +10,6 @@ export type Profile = {
   updated_at: string;
   /** 公式アカウントの友だち登録済みか（Supabase の is_line_friend）。カラム未追加の場合は undefined */
   is_line_friend?: boolean | null;
+  /** 表示モード（adult または kids） */
+  view_mode?: string | null;
 };

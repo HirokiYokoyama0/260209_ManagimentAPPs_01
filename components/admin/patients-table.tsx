@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { MessageSendSheet } from "./message-send-sheet";
 import { Minus, Plus, Hash, MessageCircle, Pencil } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -33,7 +34,7 @@ export function PatientsTable() {
   const { data: profiles = [], error, mutate } = useSWR<Profile[]>("/api/profiles", fetcher);
   const [search, setSearch] = useState("");
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
-  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend";
+  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "updated_at",
     direction: "desc",
@@ -65,6 +66,8 @@ export function PatientsTable() {
             return p.updated_at ? Date.parse(p.updated_at) : 0;
           case "is_line_friend":
             return p.is_line_friend ? 1 : 0;
+          case "view_mode":
+            return (p.view_mode ?? "").toLowerCase();
         }
       };
       const av = get(a);
@@ -125,7 +128,7 @@ export function PatientsTable() {
 
   async function updateProfile(
     id: string,
-    data: { ticket_number?: string | null; last_visit_date?: string | null }
+    data: { ticket_number?: string | null; last_visit_date?: string | null; view_mode?: string | null }
   ) {
     const res = await fetch(`/api/profiles/${id}`, {
       method: "PATCH",
@@ -138,6 +141,13 @@ export function PatientsTable() {
       profiles.map((p) => (p.id === id ? updated : p)),
       { revalidate: false }
     );
+  }
+
+  async function toggleViewMode(id: string, currentMode: string | null | undefined) {
+    // 現在のモードに基づいて切り替え
+    // 未設定または"adult"の場合は"kids"に、"kids"の場合は"adult"に
+    const newMode = currentMode === "kids" ? "adult" : "kids";
+    await updateProfile(id, { view_mode: newMode });
   }
 
   if (error) {
@@ -209,13 +219,22 @@ export function PatientsTable() {
                   {renderSortIndicator("is_line_friend")}
                 </span>
               </TableHead>
+              <TableHead
+                onClick={() => handleSort("view_mode")}
+                className="cursor-pointer select-none"
+              >
+                <span className="inline-flex items-center gap-1">
+                  表示モード
+                  {renderSortIndicator("view_mode")}
+                </span>
+              </TableHead>
               <TableHead className="w-[300px]">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   {profiles.length === 0 ? "患者データがありません。" : "該当する患者がいません。"}
                 </TableCell>
               </TableRow>
@@ -248,6 +267,18 @@ export function PatientsTable() {
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={p.view_mode === "kids"}
+                        onCheckedChange={() => toggleViewMode(p.id, p.view_mode)}
+                        aria-label={`${p.display_name || p.id}の表示モードを切り替え`}
+                      />
+                      <span className="text-sm text-muted-foreground min-w-[40px]">
+                        {p.view_mode === "kids" ? "キッズ" : "大人"}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -305,19 +336,21 @@ function ProfileEditDialog({
   onSave,
 }: {
   profile: Profile;
-  onSave: (data: { ticket_number: string | null; last_visit_date: string | null }) => void;
+  onSave: (data: { ticket_number: string | null; last_visit_date: string | null; view_mode: string | null }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [ticketNumber, setTicketNumber] = useState(profile.ticket_number ?? "");
   const [lastVisitDate, setLastVisitDate] = useState(
     profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : ""
   );
+  const [viewMode, setViewMode] = useState(profile.view_mode ?? "");
 
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
       setTicketNumber(profile.ticket_number ?? "");
       setLastVisitDate(profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : "");
+      setViewMode(profile.view_mode ?? "");
     }
   };
 
@@ -325,6 +358,7 @@ function ProfileEditDialog({
     onSave({
       ticket_number: ticketNumber.trim() || null,
       last_visit_date: lastVisitDate.trim() || null,
+      view_mode: viewMode.trim() || null,
     });
     setOpen(false);
   };
@@ -343,7 +377,7 @@ function ProfileEditDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>診察券番号・最終来院日を編集</DialogTitle>
+          <DialogTitle>診察券番号・最終来院日・表示モードを編集</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -363,6 +397,19 @@ function ProfileEditDialog({
               value={lastVisitDate}
               onChange={(e) => setLastVisitDate(e.target.value)}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="view-mode">表示モード</Label>
+            <select
+              id="view-mode"
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">未設定</option>
+              <option value="adult">大人</option>
+              <option value="kids">キッズ</option>
+            </select>
           </div>
         </div>
         <DialogFooter>
