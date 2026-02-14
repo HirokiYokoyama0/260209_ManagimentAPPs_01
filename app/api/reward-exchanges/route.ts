@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         profiles:user_id (
           display_name,
           picture_url,
-          medical_record_number
+          ticket_number
         ),
         rewards:reward_id (
           name,
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         user_id: ex.user_id,
         user_name: ex.profiles?.display_name || "不明",
         user_picture_url: ex.profiles?.picture_url || null,
-        user_medical_record_number: ex.profiles?.medical_record_number || null,
+        user_medical_record_number: ex.profiles?.ticket_number || null,
         reward_id: ex.reward_id,
         reward_name: ex.rewards?.name || "不明",
         reward_image_url: ex.rewards?.image_url || null,
@@ -74,10 +74,14 @@ export async function GET(request: NextRequest) {
         // 検索フィルタ（患者名・診察券番号・特典名）
         if (search) {
           const searchLower = search.toLowerCase();
+          const userName = (ex.user_name || "").toLowerCase();
+          const rewardName = (ex.reward_name || "").toLowerCase();
+          const ticketNumber = (ex.user_medical_record_number || "").toLowerCase();
+
           return (
-            ex.user_name.toLowerCase().includes(searchLower) ||
-            ex.reward_name.toLowerCase().includes(searchLower) ||
-            (ex.user_medical_record_number && ex.user_medical_record_number.toLowerCase().includes(searchLower))
+            userName.includes(searchLower) ||
+            rewardName.includes(searchLower) ||
+            ticketNumber.includes(searchLower)
           );
         }
         return true;
