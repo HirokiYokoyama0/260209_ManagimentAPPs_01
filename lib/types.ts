@@ -12,6 +12,12 @@ export type Profile = {
   is_line_friend?: boolean | null;
   /** 表示モード（adult または kids） */
   view_mode?: string | null;
+  /** 次回来院予定日 */
+  next_visit_date?: string | null;
+  /** 次回来院時のメモ */
+  next_memo?: string | null;
+  /** 次回メモの更新日時 */
+  next_memo_updated_at?: string | null;
 };
 
 // ============================================

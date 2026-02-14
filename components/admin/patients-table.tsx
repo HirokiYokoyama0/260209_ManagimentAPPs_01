@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import useSWR from "swr";
 import type { Profile } from "@/lib/types";
 import { formatJst } from "@/lib/format";
+import { formatVisitDate, isPastDate } from "@/lib/memo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,10 @@ import {
 } from "@/components/ui/table";
 import { MessageSendSheet } from "./message-send-sheet";
 import { MobilePatientList } from "./mobile/mobile-patient-list";
-import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2 } from "lucide-react";
+import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -129,7 +132,13 @@ export function PatientsTable() {
 
   async function updateProfile(
     id: string,
-    data: { ticket_number?: string | null; last_visit_date?: string | null; view_mode?: string | null }
+    data: {
+      ticket_number?: string | null;
+      last_visit_date?: string | null;
+      view_mode?: string | null;
+      next_visit_date?: string | null;
+      next_memo?: string | null;
+    }
   ) {
     const res = await fetch(`/api/profiles/${id}`, {
       method: "PATCH",
@@ -240,13 +249,15 @@ export function PatientsTable() {
                   {renderSortIndicator("view_mode")}
                 </span>
               </TableHead>
+              <TableHead>次回来院予定日</TableHead>
+              <TableHead className="w-[200px]">次回メモ</TableHead>
               <TableHead className="w-[300px]">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   {profiles.length === 0 ? "患者データがありません。" : "該当する患者がいません。"}
                 </TableCell>
               </TableRow>
@@ -290,6 +301,14 @@ export function PatientsTable() {
                       <span className="text-sm text-muted-foreground min-w-[40px]">
                         {p.view_mode === "kids" ? "キッズ" : "大人"}
                       </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap align-top">
+                    {p.next_visit_date ? formatVisitDate(p.next_visit_date) : "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-[11px] max-w-[200px] align-top">
+                    <div className="whitespace-pre-wrap break-words leading-relaxed">
+                      {p.next_memo || "—"}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -361,7 +380,13 @@ function ProfileEditDialog({
   onSave,
 }: {
   profile: Profile;
-  onSave: (data: { ticket_number: string | null; last_visit_date: string | null; view_mode: string | null }) => void;
+  onSave: (data: {
+    ticket_number: string | null;
+    last_visit_date: string | null;
+    view_mode: string | null;
+    next_visit_date: string | null;
+    next_memo: string | null;
+  }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [ticketNumber, setTicketNumber] = useState(profile.ticket_number ?? "");
@@ -369,6 +394,8 @@ function ProfileEditDialog({
     profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : ""
   );
   const [viewMode, setViewMode] = useState(profile.view_mode ?? "");
+  const [nextVisitDate, setNextVisitDate] = useState(profile.next_visit_date ?? "");
+  const [nextMemo, setNextMemo] = useState(profile.next_memo ?? "");
 
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
@@ -376,6 +403,8 @@ function ProfileEditDialog({
       setTicketNumber(profile.ticket_number ?? "");
       setLastVisitDate(profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : "");
       setViewMode(profile.view_mode ?? "");
+      setNextVisitDate(profile.next_visit_date ?? "");
+      setNextMemo(profile.next_memo ?? "");
     }
   };
 
@@ -384,9 +413,14 @@ function ProfileEditDialog({
       ticket_number: ticketNumber.trim() || null,
       last_visit_date: lastVisitDate.trim() || null,
       view_mode: viewMode.trim() || null,
+      next_visit_date: nextVisitDate.trim() || null,
+      next_memo: nextMemo.trim() || null,
     });
     setOpen(false);
   };
+
+  const isNextDatePast = nextVisitDate ? isPastDate(nextVisitDate) : false;
+  const isMemoTooLong = nextMemo.length > 200;
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
@@ -400,48 +434,142 @@ function ProfileEditDialog({
           編集
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>診察券番号・最終来院日・表示モードを編集</DialogTitle>
+          <DialogTitle>患者情報を編集</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="ticket-number">診察券番号</Label>
-            <Input
-              id="ticket-number"
-              value={ticketNumber}
-              onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="例: 12345"
-            />
+        <div className="grid gap-6 py-4">
+          {/* 基本情報セクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700">基本情報</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="ticket-number">診察券番号</Label>
+                <Input
+                  id="ticket-number"
+                  value={ticketNumber}
+                  onChange={(e) => setTicketNumber(e.target.value)}
+                  placeholder="例: 12345"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="last-visit-date">最終来院日</Label>
+                <Input
+                  id="last-visit-date"
+                  type="date"
+                  value={lastVisitDate}
+                  onChange={(e) => setLastVisitDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="view-mode">表示モード</Label>
+              <select
+                id="view-mode"
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">未設定</option>
+                <option value="adult">大人</option>
+                <option value="kids">キッズ</option>
+              </select>
+            </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="last-visit-date">最終来院日</Label>
-            <Input
-              id="last-visit-date"
-              type="date"
-              value={lastVisitDate}
-              onChange={(e) => setLastVisitDate(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="view-mode">表示モード</Label>
-            <select
-              id="view-mode"
-              value={viewMode}
-              onChange={(e) => setViewMode(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">未設定</option>
-              <option value="adult">大人</option>
-              <option value="kids">キッズ</option>
-            </select>
+
+          <Separator />
+
+          {/* 次回来院予定セクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700">次回来院予定</h3>
+            <div className="grid gap-2">
+              <Label htmlFor="next-visit-date">次回来院予定日</Label>
+              <Input
+                id="next-visit-date"
+                type="date"
+                value={nextVisitDate}
+                onChange={(e) => setNextVisitDate(e.target.value)}
+              />
+              {isNextDatePast && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  過去の日付が設定されています
+                </div>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="next-memo">次回メモ</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setNextMemo("次回は歯石除去を行います。よろしくお願いします。")}
+                  >
+                    歯石除去
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setNextMemo("次回は定期検診です。お待ちしております。")}
+                  >
+                    定期検診
+                  </Button>
+                </div>
+              </div>
+              <div className="relative">
+                <Textarea
+                  id="next-memo"
+                  value={nextMemo}
+                  onChange={(e) => setNextMemo(e.target.value)}
+                  placeholder="次回来院時のメッセージを入力（例: 歯石除去を行います）"
+                  rows={4}
+                  maxLength={200}
+                  className="resize-none pr-16"
+                />
+                <span className={`absolute bottom-2 right-2 text-xs ${isMemoTooLong ? "text-red-600 font-semibold" : "text-slate-400"}`}>
+                  {nextMemo.length}/200
+                </span>
+              </div>
+              {isMemoTooLong && (
+                <p className="text-xs text-red-600">
+                  200文字を超えています（現在: {nextMemo.length}文字）
+                </p>
+              )}
+            </div>
+
+            {/* プレビュー */}
+            {(nextVisitDate || nextMemo) && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <span>📱</span>
+                  患者側プレビュー
+                </div>
+                <div className="text-slate-700 space-y-1">
+                  {nextVisitDate && (
+                    <div className="font-semibold">
+                      次回来院予定: {formatVisitDate(nextVisitDate)}
+                    </div>
+                  )}
+                  {nextMemo && (
+                    <div className="whitespace-pre-wrap">{nextMemo}</div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <DialogFooter className="flex-row justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
             キャンセル
           </Button>
-          <Button onClick={handleSave}>保存</Button>
+          <Button size="sm" onClick={handleSave} disabled={isMemoTooLong}>
+            保存
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

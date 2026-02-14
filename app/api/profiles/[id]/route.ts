@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isValidMemoLength } from "@/lib/memo";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
@@ -7,13 +8,30 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { ticket_number, last_visit_date, view_mode } = body as {
+  const { ticket_number, last_visit_date, view_mode, next_visit_date, next_memo } = body as {
     ticket_number?: string | null;
     last_visit_date?: string | null;
     view_mode?: string | null;
+    next_visit_date?: string | null;
+    next_memo?: string | null;
   };
 
-  const updates: { ticket_number?: string | null; last_visit_date?: string | null; view_mode?: string | null; updated_at?: string } = {
+  // バリデーション: 次回メモの文字数チェック
+  if (next_memo && !isValidMemoLength(next_memo)) {
+    return NextResponse.json(
+      { error: "メッセージは200文字以内で入力してください" },
+      { status: 400 }
+    );
+  }
+
+  const updates: {
+    ticket_number?: string | null;
+    last_visit_date?: string | null;
+    view_mode?: string | null;
+    next_visit_date?: string | null;
+    next_memo?: string | null;
+    updated_at?: string;
+  } = {
     updated_at: new Date().toISOString(),
   };
 
@@ -32,6 +50,12 @@ export async function PATCH(
   }
   if (view_mode !== undefined) {
     updates.view_mode = view_mode === "" ? null : String(view_mode);
+  }
+  if (next_visit_date !== undefined) {
+    updates.next_visit_date = next_visit_date === "" ? null : String(next_visit_date);
+  }
+  if (next_memo !== undefined) {
+    updates.next_memo = next_memo === "" ? null : String(next_memo);
   }
 
   const supabase = await createSupabaseServerClient();

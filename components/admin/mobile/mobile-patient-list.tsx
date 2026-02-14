@@ -6,7 +6,13 @@ import { MobilePatientCard } from "./mobile-patient-card";
 type Props = {
   patients: Profile[];
   onStampChange: (id: string, delta: number) => void;
-  onEdit: (id: string, data: { ticket_number: string | null; last_visit_date: string | null; view_mode: string | null }) => void;
+  onEdit: (id: string, data: {
+    ticket_number: string | null;
+    last_visit_date: string | null;
+    view_mode: string | null;
+    next_visit_date: string | null;
+    next_memo: string | null;
+  }) => void;
   onStampSet: (id: string, count: number) => void;
   onMessage: (profile: Profile) => void;
   onViewModeToggle: (id: string, currentMode: string | null | undefined) => void;

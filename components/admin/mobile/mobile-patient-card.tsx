@@ -11,7 +11,13 @@ import { MobilePatientActionsMenu } from "./mobile-patient-actions-menu";
 type Props = {
   profile: Profile;
   onStampChange: (delta: number) => void;
-  onEdit: (data: { ticket_number: string | null; last_visit_date: string | null; view_mode: string | null }) => void;
+  onEdit: (data: {
+    ticket_number: string | null;
+    last_visit_date: string | null;
+    view_mode: string | null;
+    next_visit_date: string | null;
+    next_memo: string | null;
+  }) => void;
   onStampSet: (count: number) => void;
   onMessage: () => void;
   onViewModeToggle: () => void;
