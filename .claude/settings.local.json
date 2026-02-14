@@ -5,7 +5,10 @@
       "Bash(npm run dev)",
       "Bash(cmd.exe /c \"taskkill /PID 15020 /F\")",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

@@ -64,7 +64,7 @@ export function MessageSendSheet({ profile, open, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col">
+      <SheetContent side="right" className="flex flex-col w-full sm:max-w-md">
         <SheetHeader>
           <SheetTitle>個別メッセージ送信</SheetTitle>
         </SheetHeader>

@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MessageSendSheet } from "./message-send-sheet";
+import { MobilePatientList } from "./mobile/mobile-patient-list";
 import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -172,13 +173,15 @@ export function PatientsTable() {
           placeholder="名前または診察券番号で検索"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm bg-white/80"
+          className="w-full lg:max-w-sm bg-white/80"
         />
         <span className="hidden text-xs text-muted-foreground md:inline">
           Supabase の `profiles` テーブルとリアルタイム連携しています。
         </span>
       </div>
-      <div className="overflow-hidden rounded-xl border bg-white/90 shadow-sm">
+
+      {/* PC用: 既存のTable（lg以上で表示） */}
+      <div className="hidden lg:block overflow-hidden rounded-xl border bg-white/90 shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/80">
@@ -329,6 +332,19 @@ export function PatientsTable() {
           </TableBody>
         </Table>
       </div>
+
+      {/* スマホ用: 新規のCard一覧（lg未満で表示） */}
+      <div className="block lg:hidden">
+        <MobilePatientList
+          patients={sorted}
+          onStampChange={updateStampDelta}
+          onEdit={updateProfile}
+          onStampSet={setStampCount}
+          onMessage={setMessageProfile}
+          onViewModeToggle={toggleViewMode}
+        />
+      </div>
+
       {messageProfile && (
         <MessageSendSheet
           profile={messageProfile}
