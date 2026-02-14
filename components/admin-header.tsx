@@ -1,17 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function AdminHeader() {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isLoginPage = pathname === "/admin/login";
   const isAnalysis = pathname.startsWith("/admin/analysis");
   const isBroadcast = pathname.startsWith("/admin/broadcast");
   const isRewardExchanges = pathname.startsWith("/admin/reward-exchanges");
 
   return (
+    <>
     <header className="border-b border-slate-200 bg-gradient-to-r from-sky-600 via-sky-500 to-cyan-500 text-white shadow-sm">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Brand */}
@@ -39,7 +44,23 @@ export function AdminHeader() {
 
         {/* Right side */}
         {!isLoginPage && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {/* ハンバーガーメニューボタン（スマホのみ） */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-white hover:bg-white/20"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+
+            {/* PC用ナビゲーション */}
+            <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-3 text-sm">
               <Link
                 href="/admin"
@@ -91,9 +112,63 @@ export function AdminHeader() {
                 ログアウト
               </button>
             </form>
+            </div>
           </div>
         )}
       </div>
+
+      {/* スマホ用ドロップダウンメニュー */}
+      {!isLoginPage && mobileMenuOpen && (
+        <div className="md:hidden border-t border-white/20 bg-sky-600">
+          <nav className="container px-4 py-3 space-y-1">
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                !isAnalysis && !isBroadcast && !isRewardExchanges
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              患者一覧
+            </Link>
+            <Link
+              href="/admin/analysis"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isAnalysis
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              分析
+            </Link>
+            <Link
+              href="/admin/broadcast"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isBroadcast
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              一斉配信
+            </Link>
+            <Link
+              href="/admin/reward-exchanges"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isRewardExchanges
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              特典交換
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
+    </>
   );
 }

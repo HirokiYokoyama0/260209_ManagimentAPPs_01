@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MobileRewardExchangeList } from "@/components/admin/mobile/mobile-reward-exchange-list";
 import type { RewardExchangeWithDetails } from "@/lib/types";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -193,8 +194,8 @@ export default function RewardExchangesPage() {
         </div>
       </div>
 
-      {/* テーブル */}
-      <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+      {/* PC用: テーブル（lg以上で表示） */}
+      <div className="hidden lg:block rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-4">
             <Loader2 className="h-12 w-12 text-purple-500 animate-spin" />
@@ -329,6 +330,18 @@ export default function RewardExchangesPage() {
             </div>
           </>
         )}
+      </div>
+
+      {/* スマホ用: カード一覧（lg未満で表示） */}
+      <div className="block lg:hidden">
+        <MobileRewardExchangeList
+          exchanges={exchanges}
+          isLoading={isLoading}
+          processingId={isProcessing}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
+          onDelete={handleDelete}
+        />
       </div>
     </div>
   );

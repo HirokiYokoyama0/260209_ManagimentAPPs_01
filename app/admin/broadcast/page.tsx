@@ -130,7 +130,7 @@ function NewBroadcastTab() {
       <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
         <h2 className="text-xl font-semibold">対象者の絞り込み</h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>スタンプ数（最小）</Label>
             <Input
