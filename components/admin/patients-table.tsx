@@ -25,13 +25,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MessageSendSheet } from "./message-send-sheet";
-import { Minus, Plus, Hash, MessageCircle, Pencil } from "lucide-react";
+import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function PatientsTable() {
-  const { data: profiles = [], error, mutate } = useSWR<Profile[]>("/api/profiles", fetcher);
+  const { data: profiles = [], error, mutate, isLoading } = useSWR<Profile[]>("/api/profiles", fetcher);
   const [search, setSearch] = useState("");
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
   type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode";
@@ -153,6 +153,15 @@ export function PatientsTable() {
   if (error) {
     return (
       <p className="text-destructive">一覧の取得に失敗しました。しばらくしてから再試行してください。</p>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <Loader2 className="h-12 w-12 text-sky-500 animate-spin" />
+        <p className="text-muted-foreground text-sm">患者データを読み込んでいます...</p>
+      </div>
     );
   }
 
