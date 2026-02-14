@@ -9,10 +9,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
 
     // バリデーション: userIdが空でないか確認
     if (!userId || userId.trim() === "") {

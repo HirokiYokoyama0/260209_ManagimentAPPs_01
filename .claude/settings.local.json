@@ -11,7 +11,10 @@
       "Bash(npx tsc:*)",
       "Bash(cmd.exe /c \"taskkill /PID 13596 /F\")",
       "Bash(timeout:*)",
-      "Bash(cmd.exe /c \"taskkill /PID 1128 /F\")"
+      "Bash(cmd.exe /c \"taskkill /PID 1128 /F\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
