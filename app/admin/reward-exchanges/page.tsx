@@ -186,7 +186,7 @@ export default function RewardExchangesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             type="text"
-            placeholder="患者名・特典名で検索..."
+            placeholder="患者名・診察券番号・特典名で検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -234,7 +234,14 @@ export default function RewardExchangesPage() {
                             className="h-8 w-8 rounded-full"
                           />
                         )}
-                        <span>{exchange.user_name}</span>
+                        <div className="flex flex-col">
+                          <span>{exchange.user_name}</span>
+                          {exchange.user_medical_record_number && (
+                            <span className="text-xs text-slate-500">
+                              診察券: {exchange.user_medical_record_number}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

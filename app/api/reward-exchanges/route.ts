@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status"); // pending, completed, cancelled
-    const search = searchParams.get("search"); // 患者名または特典名で検索
+    const search = searchParams.get("search"); // 患者名、診察券番号、または特典名で検索
 
     const supabase = await createSupabaseServerClient();
 
@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
         *,
         profiles:user_id (
           display_name,
-          picture_url
+          picture_url,
+          medical_record_number
         ),
         rewards:reward_id (
           name,
@@ -57,6 +58,7 @@ export async function GET(request: NextRequest) {
         user_id: ex.user_id,
         user_name: ex.profiles?.display_name || "不明",
         user_picture_url: ex.profiles?.picture_url || null,
+        user_medical_record_number: ex.profiles?.medical_record_number || null,
         reward_id: ex.reward_id,
         reward_name: ex.rewards?.name || "不明",
         reward_image_url: ex.rewards?.image_url || null,
@@ -69,12 +71,13 @@ export async function GET(request: NextRequest) {
         created_at: ex.created_at,
       }))
       .filter((ex: RewardExchangeWithDetails) => {
-        // 検索フィルタ
+        // 検索フィルタ（患者名・診察券番号・特典名）
         if (search) {
           const searchLower = search.toLowerCase();
           return (
             ex.user_name.toLowerCase().includes(searchLower) ||
-            ex.reward_name.toLowerCase().includes(searchLower)
+            ex.reward_name.toLowerCase().includes(searchLower) ||
+            (ex.user_medical_record_number && ex.user_medical_record_number.toLowerCase().includes(searchLower))
           );
         }
         return true;

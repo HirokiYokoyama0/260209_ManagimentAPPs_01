@@ -34,10 +34,15 @@ export function MobileRewardExchangeCard({
       {/* 上段: 患者名とステータス */}
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-col gap-0.5 mb-1">
             <h3 className="font-semibold text-base truncate">
               {exchange.user_name || "—"}
             </h3>
+            {exchange.user_medical_record_number && (
+              <span className="text-xs text-slate-500">
+                診察券: {exchange.user_medical_record_number}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Gift className="h-3.5 w-3.5 shrink-0" />

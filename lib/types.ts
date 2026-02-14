@@ -128,6 +128,7 @@ export type RewardExchange = {
 export type RewardExchangeWithDetails = RewardExchange & {
   user_name: string;
   user_picture_url: string | null;
+  user_medical_record_number: string | null;
   reward_name: string;
   reward_image_url: string | null;
 };
