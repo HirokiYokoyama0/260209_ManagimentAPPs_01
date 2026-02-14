@@ -31,6 +31,8 @@ export default function AdminAnalysisPage() {
   const totalStamp = profiles.reduce((sum, p) => sum + (p.stamp_count ?? 0), 0);
   const friendCount = profiles.filter((p) => p.is_line_friend === true).length;
   const friendRate = totalProfiles ? Math.round((friendCount / totalProfiles) * 100) : 0;
+  const totalReservationClicks = profiles.reduce((sum, p) => sum + (p.reservation_button_clicks ?? 0), 0);
+  const avgReservationClicks = totalProfiles ? (totalReservationClicks / totalProfiles).toFixed(1) : "0.0";
 
   const now = Date.now();
   const days14 = 14 * 24 * 60 * 60 * 1000;
@@ -76,7 +78,7 @@ export default function AdminAnalysisPage() {
       </header>
 
       {/* サマリーカード */}
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-5">
         <SummaryCard
           label="登録ユーザー数"
           value={totalProfiles.toLocaleString()}
@@ -86,6 +88,11 @@ export default function AdminAnalysisPage() {
           label="スタンプ総数"
           value={totalStamp.toLocaleString()}
           sub="stamp_count の合計"
+        />
+        <SummaryCard
+          label="予約ボタンクリック数"
+          value={`${totalReservationClicks.toLocaleString()}回`}
+          sub={`平均 ${avgReservationClicks}回/人`}
         />
         <SummaryCard
           label="公式アカ友だち"

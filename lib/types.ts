@@ -18,6 +18,8 @@ export type Profile = {
   next_memo?: string | null;
   /** 次回メモの更新日時 */
   next_memo_updated_at?: string | null;
+  /** 予約ボタンのクリック回数 */
+  reservation_button_clicks?: number;
 };
 
 // ============================================
