@@ -20,8 +20,8 @@ export function AdminHeader() {
     <header className="border-b border-slate-200 bg-gradient-to-r from-sky-600 via-sky-500 to-cyan-500 text-white shadow-sm">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="relative h-12 w-12 rounded-full bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="relative h-10 w-10 md:h-12 md:w-12 rounded-full bg-white shadow-sm overflow-hidden flex-shrink-0">
             <Image
               src="/images/haburashiika-icon.png"
               alt="ハブラシーカ"
@@ -31,11 +31,16 @@ export function AdminHeader() {
             />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold tracking-wide">
+            {/* PCではフルタイトル、スマホでは短縮 */}
+            <span className="hidden md:block text-sm font-semibold tracking-wide">
               つくばホワイト歯科 管理ダッシュボード
             </span>
+            <span className="block md:hidden text-xs font-semibold tracking-wide">
+              つくばホワイト歯科
+            </span>
+            {/* 説明文はPCのみ表示 */}
             {!isLoginPage && (
-              <span className="text-[11px] text-sky-50/90">
+              <span className="hidden md:block text-[11px] text-sky-50/90">
                 患者一覧・スタンプ・メッセージ・一斉配信・特典交換をまとめて管理
               </span>
             )}
@@ -49,13 +54,13 @@ export function AdminHeader() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden text-white hover:bg-white/20"
+              className="md:hidden text-white hover:bg-white/30 bg-white/10 h-11 w-11 rounded-lg shadow-sm"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               ) : (
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               )}
             </Button>
 
