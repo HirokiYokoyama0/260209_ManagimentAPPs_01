@@ -27,6 +27,7 @@ type Props = {
   profile: Profile;
   onStampChange: (delta: number) => void;
   onEdit: (data: {
+    real_name: string | null;
     ticket_number: string | null;
     last_visit_date: string | null;
     view_mode: string | null;
@@ -45,6 +46,7 @@ export function MobilePatientActionsMenu({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [stampDialogOpen, setStampDialogOpen] = useState(false);
 
+  const [realName, setRealName] = useState(profile.real_name ?? "");
   const [ticketNumber, setTicketNumber] = useState(profile.ticket_number ?? "");
   const [lastVisitDate, setLastVisitDate] = useState(
     profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : ""
@@ -58,6 +60,7 @@ export function MobilePatientActionsMenu({
   const handleEditOpen = (isOpen: boolean) => {
     setEditDialogOpen(isOpen);
     if (isOpen) {
+      setRealName(profile.real_name ?? "");
       setTicketNumber(profile.ticket_number ?? "");
       setLastVisitDate(profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : "");
       setViewMode(profile.view_mode ?? "");
@@ -68,6 +71,7 @@ export function MobilePatientActionsMenu({
 
   const handleEditSave = () => {
     onEdit({
+      real_name: realName.trim() || null,
       ticket_number: ticketNumber.trim() || null,
       last_visit_date: lastVisitDate.trim() || null,
       view_mode: viewMode.trim() || null,
@@ -132,6 +136,15 @@ export function MobilePatientActionsMenu({
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-slate-700">基本情報</h3>
               <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="mobile-real-name">本名（管理画面専用）</Label>
+                  <Input
+                    id="mobile-real-name"
+                    value={realName}
+                    onChange={(e) => setRealName(e.target.value)}
+                    placeholder="例: 山田 太郎"
+                  />
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="mobile-ticket-number">診察券番号</Label>
                   <Input

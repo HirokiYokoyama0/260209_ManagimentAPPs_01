@@ -1,0 +1,10 @@
+npm install
+npm run dev
+```
+本番ビルド
+npm run build
+.next/フォルダに最適化されたビルドを作成
+デプロイ前の確認用
+本番サーバー起動（ビルド後）
+npm run build
+npm run start

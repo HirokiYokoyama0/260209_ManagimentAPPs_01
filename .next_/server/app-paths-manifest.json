@@ -1,0 +1,17 @@
+{
+  "/admin/activity-logs/page": "app/admin/activity-logs/page.js",
+  "/admin/analysis/page": "app/admin/analysis/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/qr/page": "app/admin/qr/page.js",
+  "/admin/user-logs/page": "app/admin/user-logs/page.js",
+  "/api/activity-logs/route": "app/api/activity-logs/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/event-logs/route": "app/api/event-logs/route.js",
+  "/api/families/route": "app/api/families/route.js",
+  "/api/profiles/[id]/care-messages/route": "app/api/profiles/[id]/care-messages/route.js",
+  "/api/profiles/[id]/stamp/route": "app/api/profiles/[id]/stamp/route.js",
+  "/api/profiles/route": "app/api/profiles/route.js"
+}

@@ -8,13 +8,13 @@ export async function verifySessionCookie(cookieValue: string | undefined): Prom
   if (!cookieValue) return false;
   const parts = cookieValue.split(".");
   if (parts.length !== 3) return false;
-  const [user, expStr, sig] = parts;
-  if (user !== "admin") return false;
+  const [prefix, expStr, sig] = parts;
+  if (!prefix || prefix.length < 2) return false;
   const exp = parseInt(expStr, 10);
   if (Number.isNaN(exp) || exp < Date.now()) return false;
 
   const encoder = new TextEncoder();
-  const payload = `${user}.${expStr}`;
+  const payload = `${prefix}.${expStr}`;
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(AUTH_SECRET),

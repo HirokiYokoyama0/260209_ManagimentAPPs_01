@@ -1,3 +1,4 @@
+import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -37,5 +38,10 @@ export async function PATCH(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  await logActivityIfStaff(request, "stamp_set", {
+    targetType: "profile",
+    targetId: id,
+    details: { value: newCount },
+  });
   return NextResponse.json(data);
 }

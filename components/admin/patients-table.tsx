@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/table";
 import { MessageSendSheet } from "./message-send-sheet";
 import { MobilePatientList } from "./mobile/mobile-patient-list";
-import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle } from "lucide-react";
+import { CreateFamilyDialog } from "./create-family-dialog";
+import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -35,10 +36,12 @@ import { Separator } from "@/components/ui/separator";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function PatientsTable() {
-  const { data: profiles = [], error, mutate, isLoading } = useSWR<Profile[]>("/api/profiles", fetcher);
+  const { data: profiles = [], error, mutate, isLoading} = useSWR<Profile[]>("/api/profiles", fetcher);
+  const { data: families = [] } = useSWR<any[]>("/api/families", fetcher);
   const [search, setSearch] = useState("");
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
-  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode";
+  const [createFamilyProfile, setCreateFamilyProfile] = useState<Profile | null>(null);
+  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode" | "family_category";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "updated_at",
     direction: "desc",
@@ -50,6 +53,7 @@ export function PatientsTable() {
     return profiles.filter(
       (p) =>
         (p.display_name?.toLowerCase().includes(q)) ||
+        (p.real_name?.toLowerCase().includes(q)) ||
         (p.ticket_number?.toLowerCase().includes(q))
     );
   }, [profiles, search]);
@@ -72,6 +76,8 @@ export function PatientsTable() {
             return p.is_line_friend ? 1 : 0;
           case "view_mode":
             return (p.view_mode ?? "").toLowerCase();
+          case "family_category":
+            return getFamilyCategory(p);
         }
       };
       const av = get(a);
@@ -133,6 +139,7 @@ export function PatientsTable() {
   async function updateProfile(
     id: string,
     data: {
+      real_name?: string | null;
       ticket_number?: string | null;
       last_visit_date?: string | null;
       view_mode?: string | null;
@@ -158,6 +165,28 @@ export function PatientsTable() {
     // 未設定または"adult"の場合は"kids"に、"kids"の場合は"adult"に
     const newMode = currentMode === "kids" ? "adult" : "kids";
     await updateProfile(id, { view_mode: newMode });
+  }
+
+  // 区分を計算する関数
+  function getFamilyCategory(profile: Profile): string {
+    if (!profile.family_id || !profile.family_role) {
+      return "なし";
+    }
+
+    // 家族のメンバー数を取得
+    const family = families.find((f: any) => f.family_id === profile.family_id);
+    const memberCount = family?.member_count || 0;
+
+    // 1人家族の場合は「なし」と表示
+    if (memberCount === 1) {
+      return "なし";
+    }
+
+    if (profile.family_role === "parent") {
+      return "保護者";
+    }
+    // family_role === "child"
+    return profile.line_user_id ? "子（スマホあり）" : "子（スマホなし）";
   }
 
   if (error) {
@@ -194,7 +223,17 @@ export function PatientsTable() {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/80">
-              <TableHead>氏名</TableHead>
+              <TableHead>LINE表示名</TableHead>
+              <TableHead>本名</TableHead>
+              <TableHead
+                onClick={() => handleSort("family_category")}
+                className="cursor-pointer select-none w-[140px]"
+              >
+                <span className="inline-flex items-center gap-1">
+                  区分
+                  {renderSortIndicator("family_category")}
+                </span>
+              </TableHead>
               <TableHead
                 onClick={() => handleSort("ticket_number")}
                 className="cursor-pointer select-none"
@@ -257,7 +296,7 @@ export function PatientsTable() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                   {profiles.length === 0 ? "患者データがありません。" : "該当する患者がいません。"}
                 </TableCell>
               </TableRow>
@@ -269,6 +308,12 @@ export function PatientsTable() {
                 >
                   <TableCell className="font-medium">
                     {p.display_name || "—"}
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-700">
+                    {p.real_name || "—"}
+                  </TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">
+                    {getFamilyCategory(p)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {p.ticket_number || "—"}
@@ -337,6 +382,15 @@ export function PatientsTable() {
                       <StampEditDialog profile={p} onSave={(count) => setStampCount(p.id, count)} />
                       <Button
                         size="sm"
+                        variant="outline"
+                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
+                        onClick={() => setCreateFamilyProfile(p)}
+                      >
+                        <Users className="h-3.5 w-3.5" />
+                        家族作成
+                      </Button>
+                      <Button
+                        size="sm"
                         className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-sm"
                         onClick={() => setMessageProfile(p)}
                       >
@@ -371,6 +425,15 @@ export function PatientsTable() {
           onOpenChange={(open) => !open && setMessageProfile(null)}
         />
       )}
+
+      {createFamilyProfile && (
+        <CreateFamilyDialog
+          representativeProfile={createFamilyProfile}
+          open={!!createFamilyProfile}
+          onOpenChange={(open) => !open && setCreateFamilyProfile(null)}
+          onSuccess={() => mutate()}
+        />
+      )}
     </div>
   );
 }
@@ -381,6 +444,7 @@ function ProfileEditDialog({
 }: {
   profile: Profile;
   onSave: (data: {
+    real_name: string | null;
     ticket_number: string | null;
     last_visit_date: string | null;
     view_mode: string | null;
@@ -389,6 +453,7 @@ function ProfileEditDialog({
   }) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [realName, setRealName] = useState(profile.real_name ?? "");
   const [ticketNumber, setTicketNumber] = useState(profile.ticket_number ?? "");
   const [lastVisitDate, setLastVisitDate] = useState(
     profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : ""
@@ -400,6 +465,7 @@ function ProfileEditDialog({
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
+      setRealName(profile.real_name ?? "");
       setTicketNumber(profile.ticket_number ?? "");
       setLastVisitDate(profile.last_visit_date ? profile.last_visit_date.slice(0, 10) : "");
       setViewMode(profile.view_mode ?? "");
@@ -410,6 +476,7 @@ function ProfileEditDialog({
 
   const handleSave = () => {
     onSave({
+      real_name: realName.trim() || null,
       ticket_number: ticketNumber.trim() || null,
       last_visit_date: lastVisitDate.trim() || null,
       view_mode: viewMode.trim() || null,
@@ -442,6 +509,15 @@ function ProfileEditDialog({
           {/* 基本情報セクション */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-700">基本情報</h3>
+            <div className="grid gap-2">
+              <Label htmlFor="real-name">本名（管理画面専用）</Label>
+              <Input
+                id="real-name"
+                value={realName}
+                onChange={(e) => setRealName(e.target.value)}
+                placeholder="例: 山田 太郎"
+              />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="ticket-number">診察券番号</Label>

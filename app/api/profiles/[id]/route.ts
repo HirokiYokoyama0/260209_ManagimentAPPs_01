@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActivityIfStaff } from "@/lib/activity-log";
 import { isValidMemoLength } from "@/lib/memo";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
@@ -8,7 +9,8 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { ticket_number, last_visit_date, view_mode, next_visit_date, next_memo } = body as {
+  const { real_name, ticket_number, last_visit_date, view_mode, next_visit_date, next_memo } = body as {
+    real_name?: string | null;
     ticket_number?: string | null;
     last_visit_date?: string | null;
     view_mode?: string | null;
@@ -25,6 +27,7 @@ export async function PATCH(
   }
 
   const updates: {
+    real_name?: string | null;
     ticket_number?: string | null;
     last_visit_date?: string | null;
     view_mode?: string | null;
@@ -35,6 +38,9 @@ export async function PATCH(
     updated_at: new Date().toISOString(),
   };
 
+  if (real_name !== undefined) {
+    updates.real_name = real_name === "" ? null : String(real_name);
+  }
   if (ticket_number !== undefined) {
     updates.ticket_number = ticket_number === "" ? null : String(ticket_number);
   }
@@ -69,5 +75,10 @@ export async function PATCH(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  await logActivityIfStaff(request, "profile_update", {
+    targetType: "profile",
+    targetId: id,
+    details: { fields: Object.keys(updates).filter((k) => k !== "updated_at") },
+  });
   return NextResponse.json(data);
 }

@@ -2,6 +2,8 @@ export type Profile = {
   id: string;
   line_user_id: string;
   display_name: string | null;
+  /** 患者の本名（管理画面専用、個人情報） */
+  real_name?: string | null;
   picture_url: string | null;
   stamp_count: number;
   ticket_number: string | null;
@@ -20,6 +22,47 @@ export type Profile = {
   next_memo_updated_at?: string | null;
   /** 予約ボタンのクリック回数 */
   reservation_button_clicks?: number;
+  /** 純粋な来院回数（スロット除く通院のみカウント） */
+  visit_count?: number;
+  /** 所属する家族のID */
+  family_id?: string | null;
+  /** 家族内の役割（parent: 保護者/代表者, child: 子ども/メンバー） */
+  family_role?: 'parent' | 'child' | null;
+};
+
+// ============================================
+// 家族ひもづけ機能の型定義
+// ============================================
+
+/** 家族（世帯）の実体 */
+export type Family = {
+  id: string;
+  family_name: string;
+  representative_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** 家族の合計スタンプ数・来院回数（VIEWから取得） */
+export type FamilyStampTotal = {
+  family_id: string;
+  family_name: string;
+  representative_user_id: string | null;
+  total_stamp_count: number;
+  total_visit_count: number;
+  member_count: number;
+  last_family_visit: string | null;
+  last_family_login: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** 家族詳細（メンバー情報付き） */
+export type FamilyWithMembers = Family & {
+  members: Profile[];
+  total_stamp_count: number;
+  total_visit_count: number;
+  member_count: number;
 };
 
 // ============================================

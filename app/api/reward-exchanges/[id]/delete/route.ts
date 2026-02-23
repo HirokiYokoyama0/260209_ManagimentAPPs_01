@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * DELETE /api/reward-exchanges/[id]/delete
@@ -27,6 +28,11 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    await logActivityIfStaff(request, "reward_exchange_delete", {
+      targetType: "reward_exchange",
+      targetId: id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

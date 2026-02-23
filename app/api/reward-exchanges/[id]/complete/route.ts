@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * POST /api/reward-exchanges/[id]/complete
@@ -66,6 +67,11 @@ export async function POST(
         { status: 500 }
       );
     }
+
+    await logActivityIfStaff(request, "reward_exchange_complete", {
+      targetType: "reward_exchange",
+      targetId: id,
+    });
 
     return NextResponse.json({ success: true, data: updatedData[0] });
   } catch (error) {

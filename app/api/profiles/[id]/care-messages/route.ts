@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { logActivityIfStaff } from "@/lib/activity-log";
 import { pushMessage } from "@/lib/line-messaging";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
@@ -31,6 +32,11 @@ export async function POST(
 
   // LINE Messaging API でプッシュ送信（.env.local に Channel ID/Secret または Access Token がある場合）
   const lineResult = await pushMessage(profileId, trimmedBody);
+
+  await logActivityIfStaff(request, "message_send", {
+    targetType: "profile",
+    targetId: profileId,
+  });
 
   return NextResponse.json({
     ...data,

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { logActivityIfStaff } from "@/lib/activity-log";
+import { filterProfilesBySegment, replaceMessageVariables } from "@/lib/broadcast";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { filterProfilesBySegment, replaceMessageVariables, chunkLineIds } from "@/lib/broadcast";
+import { NextRequest, NextResponse } from "next/server";
 import type { BroadcastSendRequest, Profile } from "@/lib/types";
 
 /**
@@ -77,6 +78,10 @@ export async function POST(request: NextRequest) {
     if (logError) {
       console.error("Error saving broadcast log:", logError);
     }
+
+    await logActivityIfStaff(request, "broadcast_send", {
+      details: { recipient_count: targetProfiles.length },
+    });
 
     return NextResponse.json({
       success: true,

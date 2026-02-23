@@ -39,6 +39,11 @@ export function MobilePatientCard({
           <h3 className="font-semibold text-lg truncate">
             {profile.display_name || "—"}
           </h3>
+          {profile.real_name && (
+            <p className="text-sm font-medium text-slate-700">
+              本名: {profile.real_name}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             診察券: {profile.ticket_number || "—"}
           </p>

@@ -1,19 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLoginSecret } from "@/app/admin/LoginSecretContext";
+
+type StaffInfo = { display_name: string | null; login_id: string };
 
 export function AdminHeader() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentStaff, setCurrentStaff] = useState<StaffInfo | null>(null);
+  const loginSecret = useLoginSecret();
   const isLoginPage = pathname === "/admin/login";
+
+  useEffect(() => {
+    if (isLoginPage) return;
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data: { staff: StaffInfo | null }) => {
+        if (data.staff) setCurrentStaff(data.staff);
+      })
+      .catch(() => {});
+  }, [isLoginPage]);
   const isAnalysis = pathname.startsWith("/admin/analysis");
   const isBroadcast = pathname.startsWith("/admin/broadcast");
   const isRewardExchanges = pathname.startsWith("/admin/reward-exchanges");
+  const isQr = pathname.startsWith("/admin/qr");
+  const isActivityLogs = pathname.startsWith("/admin/activity-logs");
+  const isUserLogs = pathname.startsWith("/admin/user-logs");
 
   return (
     <>
@@ -21,7 +39,19 @@ export function AdminHeader() {
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Brand */}
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="relative h-10 w-10 md:h-12 md:w-12 rounded-full bg-white shadow-sm overflow-hidden flex-shrink-0">
+          <div
+            role={isLoginPage ? "button" : undefined}
+            tabIndex={isLoginPage ? 0 : undefined}
+            onClick={isLoginPage ? () => loginSecret?.revealSignup() : undefined}
+            onKeyDown={
+              isLoginPage
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") loginSecret?.revealSignup();
+                  }
+                : undefined
+            }
+            className={`relative h-10 w-10 md:h-12 md:w-12 rounded-full bg-white shadow-sm overflow-hidden flex-shrink-0 ${isLoginPage ? "cursor-pointer hover:ring-2 hover:ring-white/50 focus:outline-none focus:ring-2 focus:ring-white" : ""}`}
+          >
             <Image
               src="/images/haburashiika-icon.png"
               alt="ハブラシーカ"
@@ -70,13 +100,13 @@ export function AdminHeader() {
               <Link
                 href="/admin"
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  !isAnalysis && !isBroadcast && !isRewardExchanges
+                  !isAnalysis && !isBroadcast && !isRewardExchanges && !isQr && !isActivityLogs && !isUserLogs
                     ? "bg-white/20 text-white shadow-sm"
                     : "bg-white/5 text-sky-50/80 hover:bg-white/10"
                 }`}
               >
                 患者一覧
-                {!isAnalysis && !isBroadcast && !isRewardExchanges && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
+                {!isAnalysis && !isBroadcast && !isRewardExchanges && !isQr && !isActivityLogs && !isUserLogs && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
               </Link>
               <Link
                 href="/admin/analysis"
@@ -108,7 +138,49 @@ export function AdminHeader() {
               >
                 特典交換
               </Link>
+              <Link
+                href="/admin/qr"
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
+                  isQr
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
+                }`}
+              >
+                テストQR
+              </Link>
+              <Link
+                href="/admin/activity-logs"
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
+                  isActivityLogs
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
+                }`}
+              >
+                スタッフ操作ログ
+              </Link>
+              <Link
+                href="/admin/user-logs"
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
+                  isUserLogs
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
+                }`}
+              >
+                ユーザログ
+              </Link>
+              <Link
+                href="/admin/change-password"
+                className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white/90 hover:bg-white/10"
+              >
+                パスワード変更
+              </Link>
             </nav>
+            {currentStaff && (
+              <span className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/95">
+                <User className="h-3.5 w-3.5" />
+                {currentStaff.display_name || currentStaff.login_id} でログイン中
+              </span>
+            )}
             <form action="/api/auth/logout" method="post">
               <button
                 type="submit"
@@ -125,12 +197,18 @@ export function AdminHeader() {
       {/* スマホ用ドロップダウンメニュー */}
       {!isLoginPage && mobileMenuOpen && (
         <div className="md:hidden border-t border-white/20 bg-sky-600">
+          {currentStaff && (
+            <div className="container px-4 py-2 flex items-center gap-2 text-xs text-white/90 border-b border-white/10">
+              <User className="h-4 w-4 flex-shrink-0" />
+              <span>{currentStaff.display_name || currentStaff.login_id} でログイン中</span>
+            </div>
+          )}
           <nav className="container px-4 py-3 space-y-1">
             <Link
               href="/admin"
               onClick={() => setMobileMenuOpen(false)}
               className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                !isAnalysis && !isBroadcast && !isRewardExchanges
+                !isAnalysis && !isBroadcast && !isRewardExchanges && !isQr && !isActivityLogs && !isUserLogs
                   ? "bg-white/20 text-white"
                   : "text-sky-50 hover:bg-white/10"
               }`}
@@ -169,6 +247,46 @@ export function AdminHeader() {
               }`}
             >
               特典交換
+            </Link>
+            <Link
+              href="/admin/qr"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isQr
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              テストQR
+            </Link>
+            <Link
+              href="/admin/activity-logs"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isActivityLogs
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              スタッフ操作ログ
+            </Link>
+            <Link
+              href="/admin/user-logs"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                isUserLogs
+                  ? "bg-white/20 text-white"
+                  : "text-sky-50 hover:bg-white/10"
+              }`}
+            >
+              ユーザログ
+            </Link>
+            <Link
+              href="/admin/change-password"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-lg px-4 py-2.5 text-sm font-medium text-sky-50 hover:bg-white/10"
+            >
+              パスワード変更
             </Link>
           </nav>
         </div>

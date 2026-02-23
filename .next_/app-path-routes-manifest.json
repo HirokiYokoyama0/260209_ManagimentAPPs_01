@@ -1,0 +1,17 @@
+{
+  "/admin/activity-logs/page": "/admin/activity-logs",
+  "/admin/analysis/page": "/admin/analysis",
+  "/admin/login/page": "/admin/login",
+  "/admin/page": "/admin",
+  "/admin/qr/page": "/admin/qr",
+  "/admin/user-logs/page": "/admin/user-logs",
+  "/api/activity-logs/route": "/api/activity-logs",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/logout/route": "/api/auth/logout",
+  "/api/auth/me/route": "/api/auth/me",
+  "/api/event-logs/route": "/api/event-logs",
+  "/api/families/route": "/api/families",
+  "/api/profiles/[id]/care-messages/route": "/api/profiles/[id]/care-messages",
+  "/api/profiles/[id]/stamp/route": "/api/profiles/[id]/stamp",
+  "/api/profiles/route": "/api/profiles"
+}

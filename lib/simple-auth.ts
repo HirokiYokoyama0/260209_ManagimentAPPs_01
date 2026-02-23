@@ -1,6 +1,7 @@
 /**
- * 管理者の簡易認証（admin / 1234）
- * ログイン成功時に署名付き Cookie を発行し、middleware で検証する。
+ * 管理者の簡易認証
+ * - スタッフテーブル（staff）でログインする場合はセッションに staff_id を含める
+ * - 従来の環境変数（ADMIN_USER / ADMIN_PASSWORD）はスタッフ未登録時のフォールバック用
  */
 
 const COOKIE_NAME = "admin_session";
@@ -21,13 +22,35 @@ export function getSessionCookieName() {
   return COOKIE_NAME;
 }
 
-/** サーバー（API Route）用: 署名付きセッショントークンを作成（形式: admin.期限.署名） */
-export function createSessionToken(): string {
+/**
+ * サーバー用: 署名付きセッショントークンを作成
+ * @param staffId スタッフの UUID。省略時は従来形式（admin.期限.署名）
+ */
+export function createSessionToken(staffId?: string): string {
   const crypto = require("crypto");
   const expiry = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
-  const payload = `admin.${expiry}`;
+  const prefix = staffId ?? "admin";
+  const payload = `${prefix}.${expiry}`;
   const sig = crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest("hex");
   return `${payload}.${sig}`;
+}
+
+/**
+ * サーバー（API Route）用: Cookie を検証し、ペイロード（staff_id または null）を返す
+ */
+export function verifySessionCookieServer(cookieValue: string | undefined): { staffId: string | null } | null {
+  if (!cookieValue) return null;
+  const crypto = require("crypto");
+  const parts = cookieValue.split(".");
+  if (parts.length !== 3) return null;
+  const [prefix, expStr, sig] = parts;
+  const exp = parseInt(expStr, 10);
+  if (Number.isNaN(exp) || exp < Date.now()) return null;
+  const payload = `${prefix}.${expStr}`;
+  const expectedSig = crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest("hex");
+  if (sig !== expectedSig) return null;
+  const staffId = prefix && prefix !== "admin" ? prefix : null;
+  return { staffId };
 }
 
 /** サーバー（API Route）用: Cookie を設定したレスポンス用オプション */
