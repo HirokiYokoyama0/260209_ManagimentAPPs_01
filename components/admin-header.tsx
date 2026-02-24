@@ -4,9 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLoginSecret } from "@/app/admin/LoginSecretContext";
+import {
+  mainNav,
+  toolNav,
+  logNav,
+  accountNav,
+  isNavItemActive,
+  isLogPath,
+} from "@/lib/admin-nav";
 
 type StaffInfo = { display_name: string | null; login_id: string };
 
@@ -26,12 +40,10 @@ export function AdminHeader() {
       })
       .catch(() => {});
   }, [isLoginPage]);
-  const isAnalysis = pathname.startsWith("/admin/analysis");
-  const isBroadcast = pathname.startsWith("/admin/broadcast");
-  const isRewardExchanges = pathname.startsWith("/admin/reward-exchanges");
-  const isQr = pathname.startsWith("/admin/qr");
-  const isActivityLogs = pathname.startsWith("/admin/activity-logs");
-  const isUserLogs = pathname.startsWith("/admin/user-logs");
+
+  const navSeparator = (
+    <span className="hidden md:inline-block h-4 w-px bg-white/30 flex-shrink-0" aria-hidden />
+  );
 
   return (
     <>
@@ -95,100 +107,92 @@ export function AdminHeader() {
             </Button>
 
             {/* PC用ナビゲーション */}
-            <div className="flex items-center gap-4">
-            <nav className="hidden md:flex items-center gap-3 text-sm">
-              <Link
-                href="/admin"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  !isAnalysis && !isBroadcast && !isRewardExchanges && !isQr && !isActivityLogs && !isUserLogs
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                患者一覧
-                {!isAnalysis && !isBroadcast && !isRewardExchanges && !isQr && !isActivityLogs && !isUserLogs && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
-              </Link>
-              <Link
-                href="/admin/analysis"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isAnalysis
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                分析
-              </Link>
-              <Link
-                href="/admin/broadcast"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isBroadcast
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                一斉配信
-              </Link>
-              <Link
-                href="/admin/reward-exchanges"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isRewardExchanges
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                特典交換
-              </Link>
-              <Link
-                href="/admin/qr"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isQr
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                テストQR
-              </Link>
-              <Link
-                href="/admin/activity-logs"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isActivityLogs
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                スタッフ操作ログ
-              </Link>
-              <Link
-                href="/admin/user-logs"
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  isUserLogs
-                    ? "bg-white/20 text-white shadow-sm"
-                    : "bg-white/5 text-sky-50/80 hover:bg-white/10"
-                }`}
-              >
-                ユーザログ
-              </Link>
-              <Link
-                href="/admin/change-password"
-                className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white/90 hover:bg-white/10"
-              >
-                パスワード変更
-              </Link>
-            </nav>
-            {currentStaff && (
-              <span className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/95">
-                <User className="h-3.5 w-3.5" />
-                {currentStaff.display_name || currentStaff.login_id} でログイン中
-              </span>
-            )}
-            <form action="/api/auth/logout" method="post">
-              <button
-                type="submit"
-                className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-white/20"
-              >
-                ログアウト
-              </button>
-            </form>
+            <div className="hidden md:flex items-center gap-3 flex-wrap">
+              {/* メイン業務 */}
+              <nav className="flex items-center gap-2">
+                {mainNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
+                        active ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-sky-50/80 hover:bg-white/10"
+                      }`}
+                    >
+                      {item.label}
+                      {active && item.href === "/admin" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
+                    </Link>
+                  );
+                })}
+              </nav>
+              {navSeparator}
+              {/* ツール */}
+              <nav className="flex items-center gap-2">
+                {toolNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
+                        active ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-sky-50/80 hover:bg-white/10"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+              {navSeparator}
+              {/* ログ（ドロップダウン） */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition bg-white/5 text-sky-50/80 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                      isLogPath(pathname) ? "bg-white/20 text-white shadow-sm" : ""
+                    }`}
+                  >
+                    ログ
+                    <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[11rem]">
+                  {logNav.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link href={item.href}>{item.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {navSeparator}
+              {/* アカウント */}
+              <nav className="flex items-center gap-2">
+                {accountNav.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white/90 hover:bg-white/10"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+              {currentStaff && (
+                <span className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/95">
+                  <User className="h-3.5 w-3.5" />
+                  {currentStaff.display_name || currentStaff.login_id} でログイン中
+                </span>
+              )}
+              <form action="/api/auth/logout" method="post">
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-white/20"
+                >
+                  ログアウト
+                </button>
+              </form>
             </div>
           </div>
         )}
@@ -203,91 +207,90 @@ export function AdminHeader() {
               <span>{currentStaff.display_name || currentStaff.login_id} でログイン中</span>
             </div>
           )}
-          <nav className="container px-4 py-3 space-y-1">
-            <Link
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                !isAnalysis && !isBroadcast && !isRewardExchanges && !isQr && !isActivityLogs && !isUserLogs
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              患者一覧
-            </Link>
-            <Link
-              href="/admin/analysis"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                isAnalysis
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              分析
-            </Link>
-            <Link
-              href="/admin/broadcast"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                isBroadcast
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              一斉配信
-            </Link>
-            <Link
-              href="/admin/reward-exchanges"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                isRewardExchanges
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              特典交換
-            </Link>
-            <Link
-              href="/admin/qr"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                isQr
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              テストQR
-            </Link>
-            <Link
-              href="/admin/activity-logs"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                isActivityLogs
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              スタッフ操作ログ
-            </Link>
-            <Link
-              href="/admin/user-logs"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                isUserLogs
-                  ? "bg-white/20 text-white"
-                  : "text-sky-50 hover:bg-white/10"
-              }`}
-            >
-              ユーザログ
-            </Link>
-            <Link
-              href="/admin/change-password"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-lg px-4 py-2.5 text-sm font-medium text-sky-50 hover:bg-white/10"
-            >
-              パスワード変更
-            </Link>
+          <nav className="container px-4 py-3 space-y-4">
+            <section>
+              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">メイン</p>
+              <div className="space-y-0.5">
+                {mainNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                        active ? "bg-white/20 text-white" : "text-sky-50 hover:bg-white/10"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+            <section className="border-t border-white/10 pt-2">
+              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">ツール</p>
+              <div className="space-y-0.5">
+                {toolNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                        active ? "bg-white/20 text-white" : "text-sky-50 hover:bg-white/10"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+            <section className="border-t border-white/10 pt-2">
+              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">ログ</p>
+              <div className="space-y-0.5">
+                {logNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                        active ? "bg-white/20 text-white" : "text-sky-50 hover:bg-white/10"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+            <section className="border-t border-white/10 pt-2">
+              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">アカウント</p>
+              <div className="space-y-0.5">
+                {accountNav.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block rounded-lg px-4 py-2.5 text-sm font-medium text-sky-50 hover:bg-white/10"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <form action="/api/auth/logout" method="post" className="block">
+                  <button
+                    type="submit"
+                    className="w-full text-left rounded-lg px-4 py-2.5 text-sm font-medium text-sky-50 hover:bg-white/10"
+                  >
+                    ログアウト
+                  </button>
+                </form>
+              </div>
+            </section>
           </nav>
         </div>
       )}
