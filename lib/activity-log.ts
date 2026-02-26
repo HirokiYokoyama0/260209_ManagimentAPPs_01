@@ -26,7 +26,9 @@ export type LogAction =
   | "family_member_remove"
   | "staff_create"
   | "staff_update"
-  | "staff_deactivate";
+  | "staff_deactivate"
+  | "survey_targets_distribute"
+  | "survey_answer_reset";
 
 export type LogActivityParams = {
   /** 操作したスタッフのID。null = 従来の環境変数ログイン（admin） */

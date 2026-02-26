@@ -51,6 +51,8 @@ const ACTION_LABELS: Record<string, string> = {
   staff_create: "スタッフ追加",
   staff_update: "スタッフ更新",
   staff_deactivate: "スタッフ無効化",
+  survey_targets_distribute: "アンケート配信",
+  survey_answer_reset: "アンケート未回答に戻す",
 };
 
 const TARGET_TYPE_LABELS: Record<string, string> = {
@@ -79,6 +81,10 @@ function formatDetails(details: Record<string, unknown> | null): string {
   if (details.value !== undefined) return `値: ${details.value}`;
   if (details.recipient_count !== undefined)
     return `対象: ${details.recipient_count}件`;
+  if (details.targetCount !== undefined && details.surveyId !== undefined)
+    return `アンケート: ${details.surveyId} / ${details.targetCount}人`;
+  if (details.surveyId !== undefined && details.userId !== undefined)
+    return `survey: ${String(details.surveyId)} / user: ${String(details.userId).slice(0, 8)}…`;
   if (details.fields && Array.isArray(details.fields))
     return `項目: ${(details.fields as string[]).join(", ")}`;
   if (details.user_id) return `user: ${String(details.user_id).slice(0, 8)}…`;

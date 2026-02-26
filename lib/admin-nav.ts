@@ -5,10 +5,11 @@
 
 export type NavItem = { label: string; href: string };
 
-/** メイン業務: 患者一覧・分析・一斉配信・特典交換 */
+/** メイン業務: 患者一覧・分析・アンケート・一斉配信・特典交換 */
 export const mainNav: NavItem[] = [
   { label: "患者一覧", href: "/admin" },
   { label: "分析", href: "/admin/analysis" },
+  { label: "アンケート", href: "/admin/surveys" },
   // 将来: 分析をドロップダウンにする場合はここにサブ項目を追加
   // { label: "利用状況", href: "/admin/analysis" },
   // { label: "イベント分析", href: "/admin/analysis/events" },
