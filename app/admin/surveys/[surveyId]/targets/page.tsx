@@ -145,9 +145,10 @@ export default function SurveyTargetsPage({
         showOnLiffOpen,
       };
       if (targetType === "filter") {
-        body.filterConditions = {};
-        if (lastVisitDays) body.filterConditions.lastVisitDays = Number(lastVisitDays);
-        if (minStamps) body.filterConditions.minStamps = Number(minStamps);
+        const filterConditions: { lastVisitDays?: number; minStamps?: number } = {};
+        if (lastVisitDays) filterConditions.lastVisitDays = Number(lastVisitDays);
+        if (minStamps) filterConditions.minStamps = Number(minStamps);
+        body.filterConditions = filterConditions;
       }
       if (targetType === "manual") {
         body.manualUserIds = selectedCandidates.map((c) => c.id);
