@@ -1,0 +1,48 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:3003
+          # 認証: GitHub Secrets に ADMIN_USER / ADMIN_PASSWORD を設定するとそれを使用。
+          # 未設定時は admin / 1234（simple-auth のフォールバック初期値）
+          PLAYWRIGHT_TEST_USER: ${{ secrets.ADMIN_USER || 'admin' }}
+          PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.ADMIN_PASSWORD || '1234' }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

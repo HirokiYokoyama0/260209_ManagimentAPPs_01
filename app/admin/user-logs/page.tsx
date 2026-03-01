@@ -152,6 +152,8 @@ export default function UserLogsPage() {
               <TableRow className="bg-slate-50">
                 <TableHead className="w-[160px]">日時</TableHead>
                 <TableHead className="min-w-[140px]">ユーザー</TableHead>
+                <TableHead className="min-w-[140px]">氏名</TableHead>
+                <TableHead className="w-[120px]">診察券</TableHead>
                 <TableHead className="min-w-[140px]">イベント</TableHead>
                 <TableHead className="w-[120px]">流入元</TableHead>
                 <TableHead>メタデータ</TableHead>
@@ -163,8 +165,17 @@ export default function UserLogsPage() {
                   <TableCell className="text-slate-600 whitespace-nowrap text-xs">
                     {formatDate(log.created_at)}
                   </TableCell>
-                  <TableCell className="text-sm text-slate-800 max-w-[200px] truncate" title={userDisplayName(log)}>
+                  <TableCell
+                    className="text-sm text-slate-800 max-w-[200px] truncate"
+                    title={userDisplayName(log)}
+                  >
                     {userDisplayName(log)}
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-800 max-w-[160px] truncate">
+                    {log.profile?.real_name || "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-800 whitespace-nowrap">
+                    {log.profile?.ticket_number || "—"}
                   </TableCell>
                   <TableCell className="text-sm">
                     {EVENT_LABELS[log.event_name] ?? log.event_name}
@@ -172,7 +183,10 @@ export default function UserLogsPage() {
                   <TableCell className="text-xs text-slate-600">
                     {log.source || "—"}
                   </TableCell>
-                  <TableCell className="text-xs text-slate-500 max-w-[220px] truncate" title={formatMetadata(log.metadata)}>
+                  <TableCell
+                    className="text-xs text-slate-500 max-w-[220px] truncate"
+                    title={formatMetadata(log.metadata)}
+                  >
                     {formatMetadata(log.metadata)}
                   </TableCell>
                 </TableRow>
