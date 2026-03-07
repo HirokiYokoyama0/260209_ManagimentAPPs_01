@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import useSWR from "swr";
 import type { Profile } from "@/lib/types";
 import { formatJst } from "@/lib/format";
@@ -28,10 +28,17 @@ import {
 import { MessageSendSheet } from "./message-send-sheet";
 import { MobilePatientList } from "./mobile/mobile-patient-list";
 import { CreateFamilyDialog } from "./create-family-dialog";
-import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users } from "lucide-react";
+import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -41,6 +48,7 @@ export function PatientsTable() {
   const [search, setSearch] = useState("");
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
   const [createFamilyProfile, setCreateFamilyProfile] = useState<Profile | null>(null);
+  const [stampEditProfile, setStampEditProfile] = useState<Profile | null>(null);
   type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode" | "family_category";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "updated_at",
@@ -357,46 +365,58 @@ export function PatientsTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      {/* 主要ボタン */}
                       <ProfileEditDialog
                         profile={p}
                         onSave={(data) => updateProfile(p.id, data)}
                       />
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="border-rose-300 text-rose-700 hover:bg-rose-50 hover:border-rose-400 hover:text-rose-800"
-                        onClick={() => updateStampDelta(p.id, -1)}
-                        disabled={p.stamp_count <= 0}
-                      >
-                        <Minus className="h-3.5 w-3.5" /> -1
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-800"
-                        onClick={() => updateStampDelta(p.id, 1)}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> +1
-                      </Button>
-                      <StampEditDialog profile={p} onSave={(count) => setStampCount(p.id, count)} />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
-                        onClick={() => setCreateFamilyProfile(p)}
-                      >
-                        <Users className="h-3.5 w-3.5" />
-                        家族作成
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-sm"
+                        className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
                         onClick={() => setMessageProfile(p)}
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
                         メッセージ
                       </Button>
+                      <Link href={`/admin/patients/${p.id}/dental-records`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-teal-500 text-teal-700 hover:bg-teal-50 hover:border-teal-600"
+                        >
+                          🦷 ケア記録
+                        </Button>
+                      </Link>
+
+                      {/* その他メニュー */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-slate-600 hover:bg-slate-100"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => setStampEditProfile(p)}
+                            className="cursor-pointer"
+                          >
+                            <Hash className="h-4 w-4 mr-2" />
+                            スタンプ数変更
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setCreateFamilyProfile(p)}
+                            className="cursor-pointer"
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            家族作成
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -432,6 +452,18 @@ export function PatientsTable() {
           open={!!createFamilyProfile}
           onOpenChange={(open) => !open && setCreateFamilyProfile(null)}
           onSuccess={() => mutate()}
+        />
+      )}
+
+      {stampEditProfile && (
+        <StampEditDialog
+          profile={stampEditProfile}
+          onSave={(count) => {
+            setStampCount(stampEditProfile.id, count);
+            setStampEditProfile(null);
+          }}
+          open={!!stampEditProfile}
+          onOpenChange={(open) => !open && setStampEditProfile(null)}
         />
       )}
     </div>
@@ -655,61 +687,66 @@ function ProfileEditDialog({
 function StampEditDialog({
   profile,
   onSave,
+  open,
+  onOpenChange,
 }: {
   profile: Profile;
   onSave: (count: number) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [value, setValue] = useState(String(profile.stamp_count));
 
-  const handleOpen = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (isOpen) setValue(String(profile.stamp_count));
-  };
+  // プロフィールが変わったら値をリセット
+  useEffect(() => {
+    setValue(String(profile.stamp_count));
+  }, [profile.stamp_count]);
 
   const handleSave = () => {
     const n = parseInt(value, 10);
     if (!Number.isInteger(n) || n < 0 || n > 999) return;
     onSave(n);
-    setOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400"
-        >
-          <Hash className="h-3.5 w-3.5" />
-          数値
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>スタンプ数を直接入力</DialogTitle>
+          <DialogTitle>スタンプ数を変更</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="stamp-count">
-              {profile.display_name || profile.id} のスタンプ数（0〜999）
-            </Label>
-            <Input
-              id="stamp-count"
-              type="number"
-              min={0}
-              max={999}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
+          <div className="grid gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-medium">患者:</span>
+              <span>{profile.real_name || profile.display_name || profile.id}</span>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border">
+              <span className="text-sm font-medium text-slate-600">現在のスタンプ数:</span>
+              <Badge variant="secondary" className="text-lg font-bold px-3 py-1">
+                {profile.stamp_count}
+              </Badge>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="stamp-count">
+                新しいスタンプ数（0〜999）
+              </Label>
+              <Input
+                id="stamp-count"
+                type="number"
+                min={0}
+                max={999}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="text-lg font-semibold"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => onOpenChange?.(false)}>
             キャンセル
           </Button>
-          <Button onClick={handleSave}>保存</Button>
+          <Button onClick={handleSave}>変更を保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

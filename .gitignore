@@ -25,10 +25,13 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
 
 # テスト・カバレッジ
 coverage/
 .nyc_output/
+test-results/
+playwright-report/
 
 # OS
 .DS_Store
@@ -42,3 +45,9 @@ Thumbs.db
 
 # Turbopack
 .turbo/
+
+# 古いビルド・キャッシュ
+.next_/
+
+# Claude Code
+.claude/
