@@ -5,17 +5,24 @@
 
 export type NavItem = { label: string; href: string };
 
-/** メイン業務: 患者一覧・分析・アンケート・一斉配信・特典交換 */
-export const mainNav: NavItem[] = [
+/** プライマリ（主要業務）: 日常的によく使う機能 */
+export const primaryNav: NavItem[] = [
   { label: "患者一覧", href: "/admin" },
+  { label: "一斉配信", href: "/admin/broadcast" },
+  { label: "特典交換", href: "/admin/reward-exchanges" },
+];
+
+/** セカンダリ（分析・設定）: 定期的に確認する機能 */
+export const secondaryNav: NavItem[] = [
   { label: "分析", href: "/admin/analysis" },
   { label: "アンケート", href: "/admin/surveys" },
   // 将来: 分析をドロップダウンにする場合はここにサブ項目を追加
   // { label: "利用状況", href: "/admin/analysis" },
   // { label: "イベント分析", href: "/admin/analysis/events" },
-  { label: "一斉配信", href: "/admin/broadcast" },
-  { label: "特典交換", href: "/admin/reward-exchanges" },
 ];
+
+/** 後方互換のため mainNav を残す（primaryNav + secondaryNav の結合） */
+export const mainNav: NavItem[] = [...primaryNav, ...secondaryNav];
 
 /** ツール */
 export const toolNav: NavItem[] = [

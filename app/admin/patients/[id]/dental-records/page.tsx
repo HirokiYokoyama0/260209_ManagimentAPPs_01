@@ -41,6 +41,19 @@ export default function DentalRecordsPage() {
   const [nextVisitMemo, setNextVisitMemo] = useState("");
   const [staffMemo, setStaffMemo] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [lastRecord, setLastRecord] = useState<any>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  // 最新記録を自動取得して表示
+  useEffect(() => {
+    if (history.length > 0 && !isNewRecord) {
+      const latest = history[0];
+      setLastRecord(latest);
+      setToothStates(latest.tooth_data || {});
+      setNextVisitMemo(latest.next_visit_memo || "");
+      setStaffMemo(latest.staff_memo || "");
+    }
+  }, [history, isNewRecord]);
 
   const handleToothClick = (toothNumber: string) => {
     setSelectedTeeth((prev) =>
@@ -75,6 +88,30 @@ export default function DentalRecordsPage() {
 
     setToothStates(newStates);
     setSelectedTeeth([]); // 選択解除
+  };
+
+  const handleNewRecord = () => {
+    setIsNewRecord(true);
+    setToothStates({});
+    setNextVisitMemo("");
+    setStaffMemo("");
+    setSelectedTeeth([]);
+  };
+
+  const getDaysAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
   };
 
   const handleSave = async () => {
@@ -148,6 +185,45 @@ export default function DentalRecordsPage() {
           </h1>
         </div>
       </div>
+
+      {/* 前回記録情報 */}
+      {lastRecord && !isNewRecord && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-900 mb-1">
+                📅 前回記録: {formatDate(lastRecord.recorded_at)}
+                <span className="ml-2 text-blue-700">
+                  （{getDaysAgo(lastRecord.recorded_at)}日前）
+                </span>
+              </p>
+              <p className="text-xs text-blue-700">
+                💡 前回の状態を表示しています。変更した歯だけ保存してください
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNewRecord}
+              className="ml-4 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              🔄 新規記録
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 新規記録モードの表示 */}
+      {isNewRecord && (
+        <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
+          <p className="text-sm font-semibold text-green-900">
+            ✨ 新規記録モード
+          </p>
+          <p className="text-xs text-green-700 mt-1">
+            空の状態から記録を作成します
+          </p>
+        </div>
+      )}
 
       {/* 歯並び図 */}
       <div className="bg-white rounded-lg border p-6 shadow-sm">

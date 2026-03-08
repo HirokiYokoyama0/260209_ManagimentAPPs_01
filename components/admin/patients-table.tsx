@@ -30,7 +30,6 @@ import { MobilePatientList } from "./mobile/mobile-patient-list";
 import { CreateFamilyDialog } from "./create-family-dialog";
 import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -226,13 +225,31 @@ export function PatientsTable() {
         </span>
       </div>
 
+      {/* バッジの凡例 */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground bg-slate-50/50 px-4 py-2 rounded-lg border border-slate-200/50">
+        <span className="font-medium text-slate-600">凡例:</span>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-purple-50 text-purple-700 border-purple-300">
+            子
+          </Badge>
+          <span>= キッズモード</span>
+        </div>
+        <span className="text-slate-400">|</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-emerald-600 font-medium text-lg">✓</span>
+          <span>= LINE公式アカウントフォロー済</span>
+        </div>
+        <span className="text-slate-400">|</span>
+        <span>表示モード変更は編集または操作メニュー「・・・」から</span>
+      </div>
+
       {/* PC用: 既存のTable（lg以上で表示） */}
       <div className="hidden lg:block overflow-hidden rounded-xl border bg-white/90 shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/80">
-              <TableHead>LINE表示名</TableHead>
-              <TableHead>本名</TableHead>
+              <TableHead className="w-[120px]">LINE表示名</TableHead>
+              <TableHead className="w-[100px]">本名</TableHead>
               <TableHead
                 onClick={() => handleSort("family_category")}
                 className="cursor-pointer select-none w-[140px]"
@@ -244,25 +261,25 @@ export function PatientsTable() {
               </TableHead>
               <TableHead
                 onClick={() => handleSort("ticket_number")}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none w-[90px]"
               >
                 <span className="inline-flex items-center gap-1">
-                  診察券番号
+                  診察券
                   {renderSortIndicator("ticket_number")}
                 </span>
               </TableHead>
               <TableHead
                 onClick={() => handleSort("stamp_count")}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none w-[80px]"
               >
                 <span className="inline-flex items-center gap-1">
-                  スタンプ数
+                  スタンプ
                   {renderSortIndicator("stamp_count")}
                 </span>
               </TableHead>
               <TableHead
                 onClick={() => handleSort("last_visit_date")}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none w-[100px]"
               >
                 <span className="inline-flex items-center gap-1">
                   最終来院
@@ -271,34 +288,25 @@ export function PatientsTable() {
               </TableHead>
               <TableHead
                 onClick={() => handleSort("updated_at")}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none w-[100px]"
               >
                 <span className="inline-flex items-center gap-1">
-                  最新ログイン
+                  最終ログイン
                   {renderSortIndicator("updated_at")}
                 </span>
               </TableHead>
               <TableHead
                 onClick={() => handleSort("is_line_friend")}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none w-[70px]"
               >
                 <span className="inline-flex items-center gap-1">
-                  公式アカ友だち
+                  友だち
                   {renderSortIndicator("is_line_friend")}
                 </span>
               </TableHead>
-              <TableHead
-                onClick={() => handleSort("view_mode")}
-                className="cursor-pointer select-none"
-              >
-                <span className="inline-flex items-center gap-1">
-                  表示モード
-                  {renderSortIndicator("view_mode")}
-                </span>
-              </TableHead>
-              <TableHead>次回来院予定日</TableHead>
-              <TableHead className="w-[200px]">次回メモ</TableHead>
-              <TableHead className="w-[300px]">操作</TableHead>
+              <TableHead className="w-[100px]">次回来院</TableHead>
+              <TableHead className="w-[160px]">次回メモ</TableHead>
+              <TableHead className="w-[200px]">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -314,14 +322,21 @@ export function PatientsTable() {
                   key={p.id}
                   className="hover:bg-slate-50/80 transition-colors"
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium max-w-[120px] truncate" title={p.display_name || undefined}>
                     {p.display_name || "—"}
                   </TableCell>
-                  <TableCell className="font-medium text-slate-700">
+                  <TableCell className="font-medium text-slate-700 max-w-[100px] truncate" title={p.real_name || undefined}>
                     {p.real_name || "—"}
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
-                    {getFamilyCategory(p)}
+                    <div className="flex items-center gap-1.5">
+                      <span>{getFamilyCategory(p)}</span>
+                      {p.view_mode === "kids" && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-purple-50 text-purple-700 border-purple-300">
+                          子
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {p.ticket_number || "—"}
@@ -339,53 +354,43 @@ export function PatientsTable() {
                   </TableCell>
                   <TableCell className="text-center">
                     {p.is_line_friend === true ? (
-                      <span className="text-emerald-600 font-medium" title="公式アカウントの友だち登録済み">〇 済</span>
+                      <span className="text-emerald-600 font-medium text-lg" title="公式アカウントの友だち登録済み">✓</span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={p.view_mode === "kids"}
-                        onCheckedChange={() => toggleViewMode(p.id, p.view_mode)}
-                        aria-label={`${p.display_name || p.id}の表示モードを切り替え`}
-                      />
-                      <span className="text-sm text-muted-foreground min-w-[40px]">
-                        {p.view_mode === "kids" ? "キッズ" : "大人"}
-                      </span>
-                    </div>
-                  </TableCell>
                   <TableCell className="text-muted-foreground text-xs whitespace-nowrap align-top">
                     {p.next_visit_date ? formatVisitDate(p.next_visit_date) : "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-[11px] max-w-[200px] align-top">
-                    <div className="whitespace-pre-wrap break-words leading-relaxed">
+                  <TableCell className="text-muted-foreground text-[10px] max-w-[160px] align-top">
+                    <div className="whitespace-pre-wrap break-words leading-tight line-clamp-3">
                       {p.next_memo || "—"}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {/* 主要ボタン */}
+                    <div className="flex items-center gap-1">
+                      {/* アイコンのみボタン */}
                       <ProfileEditDialog
                         profile={p}
                         onSave={(data) => updateProfile(p.id, data)}
                       />
                       <Button
-                        size="sm"
-                        className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-violet-600 hover:bg-violet-50 hover:text-violet-700"
                         onClick={() => setMessageProfile(p)}
+                        title="メッセージ送信"
                       >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        メッセージ
+                        <MessageCircle className="h-4 w-4" />
                       </Button>
                       <Link href={`/admin/patients/${p.id}/dental-records`}>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-teal-500 text-teal-700 hover:bg-teal-50 hover:border-teal-600"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-teal-600 hover:bg-teal-50 hover:text-teal-700"
+                          title="ケア記録"
                         >
-                          🦷 ケア記録
+                          <span className="text-base">🦷</span>
                         </Button>
                       </Link>
 
@@ -393,20 +398,37 @@ export function PatientsTable() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
-                            className="text-slate-600 hover:bg-slate-100"
+                            className="h-8 w-8 text-slate-600 hover:bg-slate-100"
+                            title="その他の操作"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuItem
                             onClick={() => setStampEditProfile(p)}
                             className="cursor-pointer"
                           >
                             <Hash className="h-4 w-4 mr-2" />
                             スタンプ数変更
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleViewMode(p.id, p.view_mode)}
+                            className="cursor-pointer"
+                          >
+                            {p.view_mode === "kids" ? (
+                              <>
+                                <span className="h-4 w-4 mr-2 text-center">👨</span>
+                                大人モードに切り替え
+                              </>
+                            ) : (
+                              <>
+                                <span className="h-4 w-4 mr-2 text-center">👶</span>
+                                キッズモードに切り替え
+                              </>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setCreateFamilyProfile(p)}
@@ -525,12 +547,12 @@ function ProfileEditDialog({
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
-          className="border-amber-300 text-amber-800 hover:bg-amber-50 hover:border-amber-400"
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+          title="編集"
         >
-          <Pencil className="h-3.5 w-3.5" />
-          編集
+          <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md sm:max-w-2xl max-h-[90vh] overflow-y-auto">

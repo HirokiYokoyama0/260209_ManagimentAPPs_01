@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLoginSecret } from "@/app/admin/LoginSecretContext";
 import {
-  mainNav,
+  primaryNav,
+  secondaryNav,
   toolNav,
   logNav,
   accountNav,
@@ -108,9 +109,28 @@ export function AdminHeader() {
 
             {/* PC用ナビゲーション */}
             <div className="hidden md:flex items-center gap-3 flex-wrap">
-              {/* メイン業務 */}
+              {/* プライマリ業務（日常業務） */}
               <nav className="flex items-center gap-2">
-                {mainNav.map((item) => {
+                {primaryNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        active ? "bg-white/25 text-white shadow-md ring-1 ring-white/30" : "bg-white/10 text-white/95 hover:bg-white/15"
+                      }`}
+                    >
+                      {item.label}
+                      {active && item.href === "/admin" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
+                    </Link>
+                  );
+                })}
+              </nav>
+              {navSeparator}
+              {/* セカンダリ業務（分析・設定） */}
+              <nav className="flex items-center gap-2">
+                {secondaryNav.map((item) => {
                   const active = isNavItemActive(item.href, pathname);
                   return (
                     <Link
@@ -121,7 +141,6 @@ export function AdminHeader() {
                       }`}
                     >
                       {item.label}
-                      {active && item.href === "/admin" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />}
                     </Link>
                   );
                 })}
@@ -209,9 +228,29 @@ export function AdminHeader() {
           )}
           <nav className="container px-4 py-3 space-y-4">
             <section>
-              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">メイン</p>
+              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">よく使う</p>
               <div className="space-y-0.5">
-                {mainNav.map((item) => {
+                {primaryNav.map((item) => {
+                  const active = isNavItemActive(item.href, pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                        active ? "bg-white/25 text-white ring-1 ring-white/30" : "text-white/95 hover:bg-white/15 bg-white/5"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+            <section className="border-t border-white/10 pt-2">
+              <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/60">分析・設定</p>
+              <div className="space-y-0.5">
+                {secondaryNav.map((item) => {
                   const active = isNavItemActive(item.href, pathname);
                   return (
                     <Link
