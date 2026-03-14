@@ -138,8 +138,8 @@
 | `display_name` | TEXT | YES | - | LINEの表示名 |
 | `real_name` | TEXT | YES | - | 患者の本名（管理画面専用、個人情報、Phase 2で追加） |
 | `picture_url` | TEXT | YES | - | LINEプロフィール画像URL |
-| `stamp_count` | INTEGER | NO | 0 | 累積ポイント（内部単位: 10点 = スタンプ1個、`stamp_history` トリガーで自動更新） |
-| `visit_count` | INTEGER | NO | 0 | 純粋な来院回数（スロット除く通院のみカウント、トリガーで自動更新） |
+| `stamp_count` | INTEGER | NO | 0 | 累積スタンプ数（`stamp_history` トリガーで自動更新） |
+| `visit_count` | INTEGER | NO | 0 | 純粋な来院回数（通常来院のみカウント、トリガーで自動更新） |
 | `family_id` | TEXT | YES | - | 所属する家族のID（FK → `families.id`、Phase 2で追加） |
 | `family_role` | TEXT | YES | - | 家族内の役割（'parent' or 'child'、Phase 2で追加） |
 | `ticket_number` | TEXT | YES | - | 診察券番号（任意） |
@@ -185,8 +185,8 @@
 | `id` | UUID | NO | gen_random_uuid() | **主キー**: 履歴レコードの一意識別子 |
 | `user_id` | TEXT | NO | - | **外部キー**: profiles.id へのリンク |
 | `visit_date` | TIMESTAMPTZ | NO | - | 実際の来院日時 |
-| `stamp_number` | INTEGER | NO | - | **付与後の累積ポイント** |
-| `amount` | INTEGER | NO | 10 | **今回付与したポイント**（通常来院=10点、スロット=3点〜8点） |
+| `stamp_number` | INTEGER | NO | - | **付与後の累積スタンプ数** |
+| `amount` | INTEGER | NO | 1 | **今回付与したスタンプ数**（通常は1、将来的にスロットゲーム等で可変になる可能性あり） |
 | `stamp_method` | TEXT | NO | 'qr_scan' | 取得方式 ('qr_scan', 'manual_admin', 'import', 'survey_reward') |
 | `qr_code_id` | TEXT | YES | - | QRコードの一意識別子（重複防止用） |
 | `notes` | TEXT | YES | - | 管理者による備考（オプション） |
@@ -357,7 +357,7 @@
 | `family_id` | TEXT | 家族グループID（families.id） |
 | `family_name` | TEXT | 家族名 |
 | `representative_user_id` | TEXT | 代表者（親）のID |
-| `total_stamp_count` | BIGINT | 家族の合計スタンプ数（内部ポイント: 10点 = 1スタンプ） |
+| `total_stamp_count` | BIGINT | 家族の合計スタンプ数 |
 | `total_visit_count` | BIGINT | 家族の合計来院回数 |
 | `member_count` | BIGINT | 家族のメンバー数 |
 | `last_family_visit` | TIMESTAMPTZ | 家族の最終来院日 |
@@ -402,7 +402,6 @@ LIMIT 10;
 - リアルタイムで計算される（マテリアライズドビューではない）
 - 家族にメンバーが1人もいない場合、`total_stamp_count` は NULL
 - `member_count` は家族に紐付いている profiles の数
-- 表示時は `total_stamp_count ÷ 10` で実際のスタンプ数を計算
 
 ---
 
@@ -721,9 +720,8 @@ WHERE p.line_user_id = 'Ufff5352c2c1ff940968ae09571d92a8e';
 -- 家族ごとのスタンプ数ランキング
 SELECT
   family_name AS 家族名,
-  total_stamp_count AS 合計スタンプ,
-  member_count AS メンバー数,
-  total_stamp_count / 10 AS 表示スタンプ数
+  total_stamp_count AS 合計スタンプ数,
+  member_count AS メンバー数
 FROM family_stamp_totals
 WHERE member_count > 0
 ORDER BY total_stamp_count DESC;
@@ -744,7 +742,7 @@ ORDER BY total_stamp_count DESC;
 | 5 | `005_add_view_mode_column.sql` | 表示モードカラム追加 | Phase 0 |
 | 6 | `006_add_next_memo_columns.sql` | 次回メモ機能カラム + トリガー追加 | Phase 0 |
 | 7 | `007_add_reservation_clicks.sql` | 予約ボタンクリック数カラム + 関数追加 | Phase 0 |
-| 8 | `008_add_10x_system_columns.sql` | 10倍整数システム対応（visit_count, amount カラム追加） | Phase 1 |
+| 8 | `008_add_10x_system_columns.sql` | スタンプ履歴拡張（visit_count, amount カラム追加） | Phase 1 |
 | 9 | `009_add_family_support.sql` | **家族機能追加**（families テーブル、family_id/family_role カラム、family_stamp_totals ビュー） | **Phase 2** |
 | 10 | `009_fix_rls_policies.sql` | RLSポリシー修正（auth.uid() 削除） | Phase 2 |
 | 11 | `012_add_real_name_column.sql` | 本名カラム追加（real_name、idx_profiles_real_name、search_profiles_by_real_name関数） | Phase 2 |

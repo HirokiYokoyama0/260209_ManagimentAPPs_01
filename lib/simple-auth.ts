@@ -4,7 +4,6 @@
  * - 従来の環境変数（ADMIN_USER / ADMIN_PASSWORD）はスタッフ未登録時のフォールバック用
  */
 
-const COOKIE_NAME = "admin_session";
 const ADMIN_USER = process.env.ADMIN_USER ?? "admin";
 const ADMIN_PASS = process.env.ADMIN_PASSWORD ?? "1234";
 const AUTH_SECRET = process.env.AUTH_SECRET ?? "dev-secret-change-in-production";
@@ -18,8 +17,16 @@ export function validateCredentials(username: string, password: string): boolean
   return username === ADMIN_USER && password === ADMIN_PASS;
 }
 
-export function getSessionCookieName() {
-  return COOKIE_NAME;
+/**
+ * セッションCookie名を取得
+ * @param deviceId デバイスID（オプション）
+ * @returns Cookie名（デバイスIDがある場合は "admin_session_{deviceId}"、ない場合は "admin_session"）
+ */
+export function getSessionCookieName(deviceId?: string) {
+  if (deviceId && deviceId.trim() !== '') {
+    return `admin_session_${deviceId}`;
+  }
+  return "admin_session"; // フォールバック（下位互換性）
 }
 
 /**

@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
-  verifySessionCookie,
-  getSessionCookieName,
+  verifyAnySessionCookie,
 } from "@/lib/simple-auth-verify";
 
 export async function middleware(request: NextRequest) {
@@ -10,9 +9,14 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = pathname.startsWith("/admin/login");
   const isProfilesApi = pathname.startsWith("/api/profiles");
 
-  const cookieName = getSessionCookieName();
-  const cookieValue = request.cookies.get(cookieName)?.value;
-  const isLoggedIn = await verifySessionCookie(cookieValue);
+  // すべてのCookieをMapに変換
+  const allCookies = new Map<string, string>();
+  request.cookies.getAll().forEach(c => {
+    allCookies.set(c.name, c.value);
+  });
+
+  // いずれかのセッションCookieが有効かチェック
+  const isLoggedIn = await verifyAnySessionCookie(allCookies);
 
   if (isProfilesApi && !isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

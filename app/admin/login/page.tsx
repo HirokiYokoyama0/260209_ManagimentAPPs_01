@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLoginSecret } from "@/app/admin/LoginSecretContext";
+import { getOrCreateDeviceId } from "@/lib/device-id";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -15,12 +16,54 @@ function LoginForm() {
   const loginSecret = useLoginSecret();
   const signupRevealed = loginSecret?.signupRevealed ?? false;
   const [signupSubmitting, setSignupSubmitting] = useState(false);
+  const [deviceId, setDeviceId] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // クライアントサイドでのみデバイスIDを取得
+  useEffect(() => {
+    setDeviceId(getOrCreateDeviceId());
+  }, []);
+
+  // ログインフォーム送信処理
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get('username')?.toString() || '';
+    const password = formData.get('password')?.toString() || '';
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          password,
+          deviceId, // デバイスIDを送信
+        }),
+      });
+
+      if (response.redirected) {
+        window.location.href = response.url;
+      } else if (response.ok) {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/admin/login?error=invalid';
+      }
+    } catch (error) {
+      console.error('ログインエラー:', error);
+      window.location.href = '/admin/login?error=invalid';
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-6 rounded-lg border p-6">
         <h1 className="text-xl font-semibold">管理者ログイン</h1>
-        <form action="/api/auth/login" method="post" className="space-y-4">
+        <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username">ログイン</Label>
             <Input
@@ -51,8 +94,8 @@ function LoginForm() {
               登録しました。下のログインで入ってください。
             </p>
           )}
-          <Button type="submit" className="w-full">
-            ログイン
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "ログイン中..." : "ログイン"}
           </Button>
         </form>
 

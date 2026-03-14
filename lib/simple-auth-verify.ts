@@ -33,6 +33,35 @@ export async function verifySessionCookie(cookieValue: string | undefined): Prom
   return sig === expectedSig;
 }
 
-export function getSessionCookieName(): string {
-  return "admin_session";
+/**
+ * セッションCookie名を取得
+ * @param deviceId デバイスID（オプション）
+ * @returns Cookie名（デバイスIDがある場合は "admin_session_{deviceId}"、ない場合は "admin_session"）
+ */
+export function getSessionCookieName(deviceId?: string): string {
+  if (deviceId && deviceId.trim() !== '') {
+    return `admin_session_${deviceId}`;
+  }
+  return "admin_session"; // フォールバック（下位互換性）
+}
+
+/**
+ * 複数のCookieの中から有効なセッションCookieを検証
+ *
+ * すべての admin_session_* および admin_session をチェックし、
+ * いずれか1つでも有効なセッションがあれば true を返す。
+ *
+ * @param cookies Cookie名と値のMap
+ * @returns いずれかのセッションが有効であれば true
+ */
+export async function verifyAnySessionCookie(cookies: Map<string, string>): Promise<boolean> {
+  for (const [name, value] of cookies.entries()) {
+    // admin_session または admin_session_{deviceId} の形式をチェック
+    if (name === 'admin_session' || name.startsWith('admin_session_')) {
+      if (await verifySessionCookie(value)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
