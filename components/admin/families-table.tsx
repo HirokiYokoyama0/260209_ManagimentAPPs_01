@@ -6,6 +6,14 @@ import type { Family, FamilyStampTotal, FamilyWithMembers, Profile } from "@/lib
 import { formatJst } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -19,18 +27,21 @@ import { AddFamilyMemberDialog } from "./add-family-member-dialog";
 import { EditFamilyDialog } from "./edit-family-dialog";
 import { DeleteFamilyDialog } from "./delete-family-dialog";
 import { RemoveFamilyMemberDialog } from "./remove-family-member-dialog";
+import { CreateFamilyDialog } from "./create-family-dialog";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function FamiliesTable() {
-  const { data: families = [], error, isLoading } = useSWR<FamilyStampTotal[]>(
+  const { data: families = [], error, isLoading, mutate } = useSWR<FamilyStampTotal[]>(
     "/api/families",
     fetcher
   );
+  const { data: profiles = [] } = useSWR<Profile[]>("/api/profiles", fetcher);
   const [expandedFamilyId, setExpandedFamilyId] = useState<string | null>(null);
   const [addMemberFamily, setAddMemberFamily] = useState<FamilyWithMembers | null>(null);
   const [editFamily, setEditFamily] = useState<Family | null>(null);
   const [deleteFamily, setDeleteFamily] = useState<Family | null>(null);
+  const [createFamilyProfile, setCreateFamilyProfile] = useState<Profile | null>(null);
 
   type SortKey = "family_name" | "total_stamp_count" | "total_visit_count" | "member_count" | "last_family_visit";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
@@ -112,10 +123,10 @@ export function FamiliesTable() {
         <p className="text-sm text-muted-foreground">
           {sorted.length}件の家族が登録されています（2人以上）
         </p>
-        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-          <Users className="h-4 w-4 mr-1" />
-          家族を作成
-        </Button>
+        <ProfileSelectDialog
+          profiles={profiles}
+          onSelectProfile={(profile) => setCreateFamilyProfile(profile)}
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-white/90 shadow-sm">
@@ -214,7 +225,7 @@ export function FamiliesTable() {
           onOpenChange={(open) => !open && setAddMemberFamily(null)}
           onSuccess={() => {
             setAddMemberFamily(null);
-            // TODO: mutate() を呼んで再取得
+            mutate();
           }}
         />
       )}
@@ -226,7 +237,7 @@ export function FamiliesTable() {
           onOpenChange={(open) => !open && setEditFamily(null)}
           onSuccess={() => {
             setEditFamily(null);
-            // TODO: mutate() を呼んで再取得
+            mutate();
           }}
         />
       )}
@@ -239,7 +250,19 @@ export function FamiliesTable() {
           onSuccess={() => {
             setDeleteFamily(null);
             setExpandedFamilyId(null);
-            // TODO: mutate() を呼んで再取得
+            mutate();
+          }}
+        />
+      )}
+
+      {createFamilyProfile && (
+        <CreateFamilyDialog
+          representativeProfile={createFamilyProfile}
+          open={!!createFamilyProfile}
+          onOpenChange={(open) => !open && setCreateFamilyProfile(null)}
+          onSuccess={() => {
+            setCreateFamilyProfile(null);
+            mutate();
           }}
         />
       )}
@@ -411,10 +434,91 @@ function FamilyRow({
           onOpenChange={(open) => !open && setRemoveMember(null)}
           onSuccess={() => {
             setRemoveMember(null);
-            // TODO: mutate() を呼んで再取得
           }}
         />
       )}
     </>
+  );
+}
+
+function ProfileSelectDialog({
+  profiles,
+  onSelectProfile,
+}: {
+  profiles: Profile[];
+  onSelectProfile: (profile: Profile) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const searchResults = profiles.filter((p) => {
+    if (!searchQuery.trim()) return false;
+    const query = searchQuery.toLowerCase();
+    return (
+      p.display_name?.toLowerCase().includes(query) ||
+      p.real_name?.toLowerCase().includes(query) ||
+      p.ticket_number?.toLowerCase().includes(query)
+    );
+  });
+
+  const handleSelectProfile = (profile: Profile) => {
+    onSelectProfile(profile);
+    setOpen(false);
+    setSearchQuery("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        size="sm"
+        className="bg-emerald-600 hover:bg-emerald-700"
+        onClick={() => setOpen(true)}
+      >
+        <Users className="h-4 w-4 mr-1" />
+        家族を作成
+      </Button>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>代表者を選択</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>患者を検索</Label>
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="名前または診察券番号で検索..."
+            />
+          </div>
+          {searchQuery.trim() && (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-lg p-2">
+              {searchResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  該当する患者がいません
+                </p>
+              ) : (
+                searchResults.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="flex items-center justify-between p-3 hover:bg-slate-50 rounded cursor-pointer border"
+                    onClick={() => handleSelectProfile(profile)}
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium">{profile.display_name || "—"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        診察券: {profile.ticket_number || "なし"}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      選択
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
