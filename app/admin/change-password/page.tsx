@@ -32,6 +32,7 @@ export default function ChangePasswordPage() {
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Cookie を送信
         body: JSON.stringify({
           current_password: currentPassword,
           new_password: newPassword,

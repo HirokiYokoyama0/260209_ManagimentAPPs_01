@@ -12,8 +12,18 @@ const SALT_ROUNDS = 10;
 export async function POST(request: NextRequest) {
   const cookieName = getSessionCookieName();
   const cookieValue = request.cookies.get(cookieName)?.value;
+
+  // デバッグログ
+  console.log("🔍 パスワード変更API:");
+  console.log("  Cookie名:", cookieName);
+  console.log("  Cookie値:", cookieValue ? "存在する" : "存在しない");
+  console.log("  全Cookie:", request.cookies.getAll().map(c => c.name));
+
   const session = verifySessionCookieServer(cookieValue);
+  console.log("  セッション:", session);
+
   if (!session?.staffId) {
+    console.log("  ❌ 認証失敗: セッションなし");
     return NextResponse.json(
       { error: "ログインしてください。" },
       { status: 401 }
