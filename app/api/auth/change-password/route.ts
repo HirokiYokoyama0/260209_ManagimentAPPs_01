@@ -10,16 +10,25 @@ const SALT_ROUNDS = 10;
  * Body: current_password, new_password（JSON または form）
  */
 export async function POST(request: NextRequest) {
-  const cookieName = getSessionCookieName();
-  const cookieValue = request.cookies.get(cookieName)?.value;
+  // 全てのCookieから admin_session で始まるものを探す
+  const allCookies = request.cookies.getAll();
+  const sessionCookie = allCookies.find(c => c.name.startsWith('admin_session'));
 
   // デバッグログ
   console.log("🔍 パスワード変更API:");
-  console.log("  Cookie名:", cookieName);
-  console.log("  Cookie値:", cookieValue ? "存在する" : "存在しない");
-  console.log("  全Cookie:", request.cookies.getAll().map(c => c.name));
+  console.log("  全Cookie:", allCookies.map(c => c.name));
+  console.log("  セッションCookie:", sessionCookie?.name);
+  console.log("  Cookie値:", sessionCookie?.value ? "存在する" : "存在しない");
 
-  const session = verifySessionCookieServer(cookieValue);
+  if (!sessionCookie) {
+    console.log("  ❌ 認証失敗: admin_session Cookie が見つかりません");
+    return NextResponse.json(
+      { error: "ログインしてください。" },
+      { status: 401 }
+    );
+  }
+
+  const session = verifySessionCookieServer(sessionCookie.value);
   console.log("  セッション:", session);
 
   if (!session?.staffId) {

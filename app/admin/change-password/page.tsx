@@ -29,16 +29,24 @@ export default function ChangePasswordPage() {
 
     setSubmitting(true);
     try {
+      // デバッグ: Cookie確認
+      console.log("🔍 送信前のCookie:", document.cookie);
+
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Cookie を送信
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin", // same-origin に変更
         body: JSON.stringify({
           current_password: currentPassword,
           new_password: newPassword,
         }),
       });
+
+      console.log("📡 レスポンスステータス:", res.status);
       const data = await res.json().catch(() => ({}));
+      console.log("📡 レスポンスデータ:", data);
 
       if (!res.ok) {
         setError(data.error ?? "パスワードの変更に失敗しました。");
