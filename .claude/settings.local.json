@@ -22,7 +22,8 @@
       "Bash(npx tsx tests/check-stamp-history-rls.ts)",
       "Bash(npx tsx tests/verify-rls-policies.ts)",
       "Bash(npx tsx tests/test-delete-real-user.ts)",
-      "Bash(npx tsx tests/final-investigation-delete-policy.ts)"
+      "Bash(npx tsx tests/final-investigation-delete-policy.ts)",
+      "Bash(npx tsx scripts/check-database-size.ts)"
     ],
     "deny": [],
     "ask": []

@@ -24,6 +24,10 @@ export default function TestQRPage() {
   const premiumParsed = parsePayload(PAYLOAD_PREMIUM);
   const regularParsed = parsePayload(PAYLOAD_REGULAR);
 
+  // カメラ用LIFF URL（直接起動）
+  const LIFF_URL_CAMERA_5 = "https://liff.line.me/2009075851-74EieWb4?action=stamp&type=qr&amount=5&location=entrance";
+  const LIFF_URL_CAMERA_10 = "https://liff.line.me/2009075851-74EieWb4?action=stamp&type=qr&amount=10&location=entrance";
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -36,7 +40,70 @@ export default function TestQRPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* カメラ用QRコード（直接LIFF起動） */}
+      <div className="border-t border-slate-200 pt-6">
+        <h2 className="text-lg font-semibold mb-2">📸 カメラ用QRコード（直接LIFF起動）</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          QRスキャン → LIFF起動 → URLパラメータ検出 → 自動API実行 → 完了画面
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* カメラ用: 10スタンプ */}
+          <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-6 shadow-sm">
+            <h3 className="text-base font-medium text-blue-900 mb-1">
+              📸 直接カメラ用（10スタンプ）
+            </h3>
+            <p className="text-xs text-blue-700 mb-4">
+              QRスキャンで自動的にLIFFが起動し、10スタンプ付与
+            </p>
+            <div className="flex justify-center bg-white rounded-lg p-4">
+              <QRCodeSVG
+                value={LIFF_URL_CAMERA_10}
+                size={200}
+                level="M"
+                includeMargin={false}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2 break-all font-mono">
+              {LIFF_URL_CAMERA_10}
+            </p>
+            <p className="text-xs text-blue-600 mt-3">
+              ✓ URLパラメータ: action=stamp, amount=10
+            </p>
+          </div>
+
+          {/* カメラ用: 5スタンプ */}
+          <div className="rounded-xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
+            <h3 className="text-base font-medium text-green-900 mb-1">
+              📸 直接カメラ用（5スタンプ）
+            </h3>
+            <p className="text-xs text-green-700 mb-4">
+              QRスキャンで自動的にLIFFが起動し、5スタンプ付与
+            </p>
+            <div className="flex justify-center bg-white rounded-lg p-4">
+              <QRCodeSVG
+                value={LIFF_URL_CAMERA_5}
+                size={200}
+                level="M"
+                includeMargin={false}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2 break-all font-mono">
+              {LIFF_URL_CAMERA_5}
+            </p>
+            <p className="text-xs text-green-600 mt-3">
+              ✓ URLパラメータ: action=stamp, amount=5
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 既存のペイロード型QRコード */}
+      <div className="border-t border-slate-200 pt-6">
+        <h2 className="text-lg font-semibold mb-2">📱 アプリ内スキャン用（ペイロード型）</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          LIFFアプリ内のカメラ機能で読み取るタイプ（旧仕様）
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* 優良患者様用 */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-medium text-slate-800 mb-1">
@@ -98,6 +165,7 @@ export default function TestQRPage() {
             ※ テスト用です。本番では院内に設置したQRをご利用ください。
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
