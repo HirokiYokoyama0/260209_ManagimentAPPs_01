@@ -6,9 +6,15 @@ import { NextRequest, NextResponse } from "next/server";
  * ログイン中のスタッフ情報を返す。スタッフでない（従来の admin セッション）の場合は null を返す。
  */
 export async function GET(request: NextRequest) {
-  const cookieName = getSessionCookieName();
-  const cookieValue = request.cookies.get(cookieName)?.value;
-  const session = verifySessionCookieServer(cookieValue);
+  // 全てのCookieから admin_session で始まるものを探す
+  const allCookies = request.cookies.getAll();
+  const sessionCookie = allCookies.find(c => c.name.startsWith('admin_session'));
+
+  if (!sessionCookie) {
+    return NextResponse.json({ staff: null });
+  }
+
+  const session = verifySessionCookieServer(sessionCookie.value);
   if (!session || session.staffId === null) {
     return NextResponse.json({ staff: null });
   }

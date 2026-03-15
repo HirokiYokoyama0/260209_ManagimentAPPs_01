@@ -45,9 +45,15 @@ export type LogActivityParams = {
  * スタッフテーブルでログインした場合は staff_id、従来の環境変数ログイン（admin）の場合は null。
  */
 export function getStaffIdFromRequest(request: NextRequest): string | null {
-  const cookieName = getSessionCookieName();
-  const cookieValue = request.cookies.get(cookieName)?.value;
-  const session = verifySessionCookieServer(cookieValue);
+  // 全てのCookieから admin_session で始まるものを探す
+  const allCookies = request.cookies.getAll();
+  const sessionCookie = allCookies.find(c => c.name.startsWith('admin_session'));
+
+  if (!sessionCookie) {
+    return null;
+  }
+
+  const session = verifySessionCookieServer(sessionCookie.value);
   return session?.staffId ?? null;
 }
 
