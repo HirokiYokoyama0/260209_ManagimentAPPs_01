@@ -2,6 +2,7 @@ import { logActivity } from "@/lib/activity-log";
 import {
   createSessionToken,
   getSessionCookieOptions,
+  getSessionCookieName,
   validateCredentials,
 } from "@/lib/simple-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";

@@ -63,7 +63,6 @@ export function verifySessionCookieServer(cookieValue: string | undefined): { st
 /** サーバー（API Route）用: Cookie を設定したレスポンス用オプション */
 export function getSessionCookieOptions(token: string) {
   return {
-    name: COOKIE_NAME,
     value: token,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
