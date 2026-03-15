@@ -5,8 +5,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 const SALT_ROUNDS = 10;
 
 /**
- * スタッフ初回登録（サインアップ）。
- * スタッフが 0 人のときだけ 1 件登録可能。それ以外は 403。
+ * スタッフ登録（サインアップ）。
+ * login_id が重複していなければ登録可能。
+ * ⚠️ セキュリティ注意: 現在は誰でもアクセス可能（将来的に認証必須に変更推奨）
  */
 export async function POST(request: NextRequest) {
   let loginId = "";
@@ -50,13 +51,17 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createSupabaseAdminClient();
 
-    const { count, error: countError } = await supabase
+    // 制限削除: 複数スタッフの登録を許可
+    // login_id の重複チェック
+    const { data: existingStaff } = await supabase
       .from("staff")
-      .select("*", { count: "exact", head: true });
+      .select("login_id")
+      .eq("login_id", loginId)
+      .single();
 
-    if (countError || (count ?? 0) > 0) {
+    if (existingStaff) {
       return NextResponse.redirect(
-        new URL("/admin/login?signup=error", request.url),
+        new URL("/admin/login?signup=error&reason=duplicate", request.url),
         { status: 302 }
       );
     }

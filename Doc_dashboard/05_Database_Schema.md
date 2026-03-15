@@ -5,9 +5,9 @@
 このドキュメントでは、Supabase（PostgreSQL）のデータベース構造を全体的にまとめています。
 
 **作成日:** 2026-02-16
-**最終更新:** 2026-02-22
+**最終更新:** 2026-03-15
 **データベース:** Supabase PostgreSQL
-**バージョン:** 1.3 (Phase 2 本名フィールド追加)
+**バージョン:** 1.7 (016マイグレーション適用完了)
 
 ---
 
@@ -205,11 +205,19 @@
 
 **RLS (Row Level Security):**
 - ✅ 有効
-- ポリシー: `allow_public_read`, `allow_public_insert` (開発段階)
+- ポリシー:
+  - `allow_public_read` - 全員が読み取り可能
+  - `allow_public_insert` - 全員が挿入可能
+  - `allow_public_delete` - 全員が削除可能（016マイグレーションで追加、2026-02-24）
+  - `allow_public_update` - 全員が更新可能（016マイグレーションで追加、2026-02-24）
 
 **トリガー:**
 - `trigger_update_profile_stamp_count` (AFTER INSERT)
   - 新しいスタンプが追加されたら `profiles.stamp_count` と `profiles.last_visit_date` を自動更新
+  - 計算方式: `stamp_count = MAX(stamp_number)`
+- `trigger_update_profile_on_stamp_delete` (AFTER DELETE) - 016マイグレーションで追加
+  - スタンプ削除時に `profiles.stamp_count`, `visit_count`, `last_visit_date` を再計算
+  - 計算方式: `stamp_count = MAX(stamp_number)`, `visit_count = COUNT(*)`, `last_visit_date = MAX(visit_date)`
 
 **重要な設計ポイント:**
 - `stamp_number` は「その時点でのスタンプ数（累積）」を表す
@@ -425,6 +433,30 @@ LIMIT 10;
 **設計原則: Single Source of Truth**
 - `profiles.stamp_count` がスタンプ数の唯一の真実
 - 手動で更新する必要なし（トリガーが自動計算）
+
+---
+
+### 1-2. `update_profile_on_stamp_delete()`
+
+**説明:** スタンプ履歴が削除されたら profiles テーブルを再計算（Phase 3で追加、016マイグレーション）
+
+**作成:** `016_add_delete_policy_stamp_history.sql`
+
+**トリガー:** `trigger_update_profile_on_stamp_delete` (AFTER DELETE on stamp_history)
+
+**処理内容:**
+```sql
+-- stamp_count を MAX(stamp_number) で再計算
+-- visit_count を COUNT(*) WHERE amount = 10 で再計算（通常来院のみカウント）
+-- last_visit_date を MAX(visit_date) で再計算
+-- updated_at を NOW() で更新
+-- レコードが0件の場合はすべて 0 または NULL にリセット
+```
+
+**設計ポイント:**
+- スタンプ減少時（管理画面での手動調整）に `profiles` テーブルとの整合性を保つ
+- INSERT トリガーと同じく `MAX(stamp_number)` を使用して計算方法を統一
+- 削除後にレコードが残っていない場合は初期状態に戻す
 
 ---
 
@@ -746,6 +778,11 @@ ORDER BY total_stamp_count DESC;
 | 9 | `009_add_family_support.sql` | **家族機能追加**（families テーブル、family_id/family_role カラム、family_stamp_totals ビュー） | **Phase 2** |
 | 10 | `009_fix_rls_policies.sql` | RLSポリシー修正（auth.uid() 削除） | Phase 2 |
 | 11 | `012_add_real_name_column.sql` | 本名カラム追加（real_name、idx_profiles_real_name、search_profiles_by_real_name関数） | Phase 2 |
+| 12 | `013_create_staff_table.sql` | スタッフアカウントテーブル作成 | Phase 2 |
+| 13 | `014_create_activity_logs_table.sql` | スタッフ操作ログテーブル作成 | Phase 2 |
+| 14 | `015_create_event_logs_table_ForUser.sql` | ユーザー行動ログテーブル + ビュー作成 | Phase 2 |
+| 15 | `016_add_delete_policy_stamp_history.sql` | **stamp_history DELETE/UPDATEポリシー + DELETEトリガー追加**（スタンプ削除時の整合性維持、2026-03-15適用完了） | **Phase 3** |
+| 16 | `019_create_dental_records_table.sql` | 歯科ケア記録テーブル + RPC関数作成 | Phase 3 |
 
 **注意:**
 - 002 は 001 に依存（外部キー: profiles.id）
@@ -1014,8 +1051,10 @@ CREATE POLICY "allow_public_read" ON profiles FOR SELECT USING (true);
 | 2026-02-22 | 1.3 | **Phase 2 本名フィールド追加**：profiles.real_name カラム、idx_profiles_real_name インデックス、search_profiles_by_real_name() 関数、012マイグレーション追加 |
 | 2026-03-01 | 1.4 | **staff / activity_logs / event_logs テーブル追加**：スタッフアカウント・操作ログ・ユーザー行動ログのテーブル定義、ビュー（daily_active_users, event_summary）追記 |
 | 2026-03-07 | 1.5 | **Phase 3 ケア記録機能追加**：patient_dental_records テーブル、8種類のstatus定義（治療中追加）、Supabase RPC関数3つ、019マイグレーション追加 |
+| 2026-03-15 | 1.6 | **stamp_history RLS更新（実測確認に基づく）**：016マイグレーションの DELETE/UPDATE ポリシーとDELETEトリガーを追記、update_profile_on_stamp_delete() 関数追加、マイグレーション順序更新 |
+| 2026-03-15 | 1.7 | **016マイグレーション適用完了**：LIFFアプリ開発者により本番環境に適用完了、ANON_KEYでのDELETE動作確認済み |
 
 ---
 
 **作成者:** Claude Code
-**最終更新日:** 2026-03-07
+**最終更新日:** 2026-03-15

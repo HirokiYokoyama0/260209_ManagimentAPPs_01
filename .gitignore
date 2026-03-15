@@ -33,6 +33,9 @@ coverage/
 test-results/
 playwright-report/
 
+# テストスクリプト（調査用、本番に不要）
+tests/
+
 # OS
 .DS_Store
 Thumbs.db
