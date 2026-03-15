@@ -69,30 +69,12 @@ export async function DELETE(
       );
     }
 
-    // 新しい単身家族を作成
-    const { data: newFamily, error: familyError } = await supabase
-      .from("families")
-      .insert({
-        family_name: `${user.display_name || "ユーザー"}の家族`,
-        representative_user_id: user_id,
-      })
-      .select()
-      .single();
-
-    if (familyError) {
-      console.error("単身家族作成エラー:", familyError);
-      return NextResponse.json(
-        { error: "単身家族の作成に失敗しました" },
-        { status: 500 }
-      );
-    }
-
-    // ユーザーを新しい家族に移動
+    // ユーザーのfamily_idとfamily_roleをNULLにする
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
-        family_id: newFamily.id,
-        family_role: "parent",
+        family_id: null,
+        family_role: null,
       })
       .eq("id", user_id);
 
@@ -112,8 +94,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `${user.display_name || user_id} を独立させました`,
-      new_family_id: newFamily.id,
+      message: `${user.display_name || user_id} を家族から削除しました`,
     });
   } catch (error) {
     console.error("メンバー削除処理エラー:", error);

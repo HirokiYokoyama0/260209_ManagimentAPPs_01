@@ -28,7 +28,8 @@ import {
 import { MessageSendSheet } from "./message-send-sheet";
 import { MobilePatientList } from "./mobile/mobile-patient-list";
 import { CreateFamilyDialog } from "./create-family-dialog";
-import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users, MoreHorizontal } from "lucide-react";
+import { ResetToIndividualDialog } from "./reset-to-individual-dialog";
+import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users, MoreHorizontal, UserX } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -48,6 +49,7 @@ export function PatientsTable() {
   const [messageProfile, setMessageProfile] = useState<Profile | null>(null);
   const [createFamilyProfile, setCreateFamilyProfile] = useState<Profile | null>(null);
   const [stampEditProfile, setStampEditProfile] = useState<Profile | null>(null);
+  const [resetProfile, setResetProfile] = useState<Profile | null>(null);
   type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode" | "family_category";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "updated_at",
@@ -437,6 +439,13 @@ export function PatientsTable() {
                             <Users className="h-4 w-4 mr-2" />
                             家族作成
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setResetProfile(p)}
+                            className="cursor-pointer"
+                          >
+                            <UserX className="h-4 w-4 mr-2" />
+                            単身ユーザーにリセット
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -486,6 +495,15 @@ export function PatientsTable() {
           }}
           open={!!stampEditProfile}
           onOpenChange={(open) => !open && setStampEditProfile(null)}
+        />
+      )}
+
+      {resetProfile && (
+        <ResetToIndividualDialog
+          profile={resetProfile}
+          open={!!resetProfile}
+          onOpenChange={(open) => !open && setResetProfile(null)}
+          onSuccess={() => mutate()}
         />
       )}
     </div>

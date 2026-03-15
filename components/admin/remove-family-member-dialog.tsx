@@ -66,7 +66,7 @@ export function RemoveFamilyMemberDialog({
             <strong className="text-foreground">{familyName}</strong> から削除します。
             <br />
             <br />
-            削除されたメンバーは個別の家族に戻ります。
+            削除されたメンバーは家族に所属しない状態になります。
             {member.family_role === "parent" && (
               <div className="mt-2 p-2 bg-amber-50 text-amber-800 rounded text-sm">
                 ⚠️ このメンバーは保護者です。削除できません。

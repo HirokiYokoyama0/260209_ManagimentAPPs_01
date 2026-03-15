@@ -61,7 +61,7 @@ export function DeleteFamilyDialog({
             <strong className="text-foreground">{family.family_name}</strong> を解散します。
             <br />
             <br />
-            すべてのメンバーは個別の家族に戻ります。この操作は取り消せません。
+            すべてのメンバーは家族に所属しない状態になります。この操作は取り消せません。
           </DialogDescription>
         </DialogHeader>
 

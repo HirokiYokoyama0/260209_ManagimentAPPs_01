@@ -157,29 +157,13 @@ export async function DELETE(
       );
     }
 
-    // 各メンバーに新しい単身家族を作成
+    // 各メンバーのfamily_idとfamily_roleをNULLにする
     for (const member of members) {
-      // 単身家族を作成
-      const { data: newFamily, error: familyError } = await supabase
-        .from("families")
-        .insert({
-          family_name: `${member.display_name || "ユーザー"}の家族`,
-          representative_user_id: member.id,
-        })
-        .select()
-        .single();
-
-      if (familyError) {
-        console.error(`メンバー ${member.id} の単身家族作成エラー:`, familyError);
-        continue;
-      }
-
-      // profilesテーブルを更新
       const { error: updateError } = await supabase
         .from("profiles")
         .update({
-          family_id: newFamily.id,
-          family_role: "parent",
+          family_id: null,
+          family_role: null,
         })
         .eq("id", member.id);
 
