@@ -136,11 +136,16 @@ export function AdminHeader() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
                         active ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-sky-50/80 hover:bg-white/10"
                       }`}
                     >
                       {item.label}
+                      {item.badge && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-amber-900">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -257,11 +262,16 @@ export function AdminHeader() {
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                      className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
                         active ? "bg-white/20 text-white" : "text-sky-50 hover:bg-white/10"
                       }`}
                     >
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-400 text-amber-900">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
