@@ -24,6 +24,7 @@ export type LogAction =
   | "family_delete"
   | "family_member_add"
   | "family_member_remove"
+  | "reset_to_individual"
   | "staff_create"
   | "staff_update"
   | "staff_deactivate"
