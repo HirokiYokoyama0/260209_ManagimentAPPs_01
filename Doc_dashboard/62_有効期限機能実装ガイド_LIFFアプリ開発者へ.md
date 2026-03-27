@@ -312,9 +312,9 @@ const handleComplete = async (id: string) => {
 
 ---
 
-## 🔧 管理ダッシュボード側での対応（予定）
+## 🔧 管理ダッシュボード側での対応（実装済み）
 
-### 実装予定の機能
+### ✅ 実装済みの機能（2026-03-28）
 
 1. **期限切れバッジの表示**
    ```typescript
@@ -324,16 +324,71 @@ const handleComplete = async (id: string) => {
    ```
 
 2. **引き渡し完了時の警告**
-   - 期限切れの特典を引き渡そうとした場合に確認ダイアログ
+   - 期限切れの特典を引き渡そうとした場合に確認ダイアログを表示
+   - スタッフに注意喚起
 
-3. **フィルタ機能の追加（将来）**
+3. **期限切れ復活機能（リスク対策）**
+   - **目的**: 誤って期限切れになった特典をスタッフの判断で復活させる
+   - **機能**:
+     - `expired` または期限切れの `pending` 状態から `pending` に戻す
+     - 有効期限の延長（日数指定）が可能
+     - スタッフ名と操作履歴を `notes` に自動記録
+   - **API**: `POST /api/reward-exchanges/[id]/reactivate`
+   - **実装場所**: `app/admin/reward-exchanges/page.tsx`
+
+   ```typescript
+   // 復活処理の例
+   const handleReactivate = async (id: string) => {
+     const extendDaysStr = prompt(
+       "有効期限を延長する場合は日数を入力してください（例: 7）\n※入力しない場合は元の期限のまま復活します",
+       "7"
+     );
+
+     const extendDays = extendDaysStr ? parseInt(extendDaysStr) : 0;
+
+     const response = await fetch(`/api/reward-exchanges/${id}/reactivate`, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ extendDays })
+     });
+
+     // ... 処理
+   };
+   ```
+
+4. **フィルタ機能の追加（将来予定）**
    - 「期限切れのみ表示」オプション
 
-### データベース側の対応は不要
+### データベース側の対応
 
 - ✅ `reward_exchanges.valid_until` カラムは既に存在
 - ✅ `status = 'expired'` の型定義は完了
 - ✅ `expired` バッジの表示は実装済み
+- ✅ 復活処理で `notes` に操作履歴を記録
+
+### リスク対策: 期限切れ復活機能の運用ガイド
+
+**使用場面**:
+- 患者が来院したが、特典の有効期限が数日前に切れていた
+- スタッフの操作ミスで期限内に引き渡しができなかった
+- システムトラブルで期限切れになってしまった
+
+**操作手順**:
+1. 特典交換履歴ページで期限切れの特典を確認
+2. 「復活」ボタンをクリック
+3. 延長する日数を入力（例: 7日延長）
+4. 確認後、`status` が `pending` に戻り、有効期限が延長される
+5. `notes` に操作履歴が自動記録される
+
+**記録される情報**:
+```
+[2026-03-28T10:30:00.000Z] 田中スタッフ が期限切れを解除し、有効期限を7日延長
+```
+
+**注意事項**:
+- 復活操作は必ず患者本人の確認後に実施すること
+- 理由なく頻繁に復活させないこと（ポリシー違反）
+- 操作履歴は監査用に保存されます
 
 ---
 

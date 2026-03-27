@@ -19,6 +19,7 @@ export type LogAction =
   | "reward_exchange_complete"
   | "reward_exchange_cancel"
   | "reward_exchange_delete"
+  | "reward_exchange_reactivate"
   | "family_create"
   | "family_update"
   | "family_delete"

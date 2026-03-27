@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
-import { Check, X, Trash2, Search, Filter, Gift, Loader2 } from "lucide-react";
+import { Check, X, Trash2, Search, Filter, Gift, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -145,6 +145,56 @@ export default function RewardExchangesPage() {
       }
     } catch (error) {
       console.error("Error deleting exchange:", error);
+      alert("エラーが発生しました");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 期限切れ復活処理
+  const handleReactivate = async (id: string) => {
+    const exchange = exchanges.find(ex => ex.id === id);
+
+    // 延長日数の入力
+    const extendDaysStr = prompt(
+      "有効期限を延長する場合は日数を入力してください（例: 7）\n※入力しない場合は元の期限のまま復活します",
+      "7"
+    );
+
+    if (extendDaysStr === null) return; // キャンセル
+
+    const extendDays = extendDaysStr ? parseInt(extendDaysStr, 10) : 0;
+
+    if (extendDays < 0 || isNaN(extendDays)) {
+      alert("有効な日数を入力してください");
+      return;
+    }
+
+    const confirmMessage = extendDays > 0
+      ? `期限切れを解除し、有効期限を${extendDays}日延長しますか？`
+      : "期限切れを解除しますか？（有効期限は元のまま）";
+
+    const confirmed = confirm(confirmMessage);
+    if (!confirmed) return;
+
+    setIsProcessing(id);
+    try {
+      const response = await fetch(`/api/reward-exchanges/${id}/reactivate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ extendDays }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message || "期限切れを解除しました");
+        mutate();
+      } else {
+        const error = await response.json();
+        alert(`エラー: ${error.error || "処理に失敗しました"}`);
+      }
+    } catch (error) {
+      console.error("Error reactivating exchange:", error);
       alert("エラーが発生しました");
     } finally {
       setIsProcessing(null);
@@ -330,6 +380,18 @@ export default function RewardExchangesPage() {
                     <TableCell className="text-right">
                       {exchange.status === "pending" && (
                         <div className="flex justify-end gap-2">
+                          {isExpired(exchange) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReactivate(exchange.id)}
+                              disabled={isProcessing === exchange.id}
+                              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                            >
+                              <RefreshCw className="mr-1 h-3 w-3" />
+                              復活
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -349,6 +411,30 @@ export default function RewardExchangesPage() {
                           >
                             <X className="mr-1 h-3 w-3" />
                             キャンセル
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(exchange.id)}
+                            disabled={isProcessing === exchange.id}
+                            className="border-red-200 text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="mr-1 h-3 w-3" />
+                            削除
+                          </Button>
+                        </div>
+                      )}
+                      {exchange.status === "expired" && (
+                        <div className="flex justify-end gap-2 items-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReactivate(exchange.id)}
+                            disabled={isProcessing === exchange.id}
+                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            復活
                           </Button>
                           <Button
                             size="sm"
