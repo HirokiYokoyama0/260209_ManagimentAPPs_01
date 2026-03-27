@@ -39,10 +39,36 @@ export default function RewardExchangesPage() {
 
   const exchanges = data?.exchanges || [];
 
+  // 期限切れチェック
+  const isExpired = (exchange: RewardExchangeWithDetails): boolean => {
+    if (!exchange.valid_until) return false;
+    return new Date(exchange.valid_until) < new Date();
+  };
+
+  // 有効期限のフォーマット
+  const formatValidUntil = (validUntil: string): string => {
+    const date = new Date(validUntil);
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
   // 引き渡し完了処理
   const handleComplete = async (id: string) => {
-    const confirmed = confirm("特典を引き渡し完了にしますか？");
-    if (!confirmed) return;
+    const exchange = exchanges.find(ex => ex.id === id);
+
+    // 期限切れ警告
+    if (exchange?.valid_until && isExpired(exchange)) {
+      const confirmed = confirm(
+        `⚠️ この特典は有効期限が切れています（期限: ${formatValidUntil(exchange.valid_until)}）。\n\nそれでも引き渡しを完了しますか？`
+      );
+      if (!confirmed) return;
+    } else {
+      const confirmed = confirm("特典を引き渡し完了にしますか？");
+      if (!confirmed) return;
+    }
 
     setIsProcessing(id);
     try {
@@ -126,13 +152,28 @@ export default function RewardExchangesPage() {
   };
 
   // ステータスバッジ
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (exchange: RewardExchangeWithDetails) => {
+    const { status, valid_until } = exchange;
+    const expired = isExpired(exchange);
+
     switch (status) {
       case "pending":
         return (
-          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-            未引渡
-          </Badge>
+          <div className="flex flex-col gap-1 items-center">
+            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+              未引渡
+            </Badge>
+            {expired && (
+              <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-xs">
+                ⚠️ 期限切れ
+              </Badge>
+            )}
+            {valid_until && !expired && (
+              <span className="text-xs text-slate-500">
+                期限: {formatValidUntil(valid_until)}
+              </span>
+            )}
+          </div>
         );
       case "completed":
         return (
@@ -144,6 +185,12 @@ export default function RewardExchangesPage() {
         return (
           <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-100">
             キャンセル
+          </Badge>
+        );
+      case "expired":
+        return (
+          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+            期限切れ
           </Badge>
         );
       default:
@@ -278,7 +325,7 @@ export default function RewardExchangesPage() {
                       })}
                     </TableCell>
                     <TableCell className="text-center">
-                      {getStatusBadge(exchange.status)}
+                      {getStatusBadge(exchange)}
                     </TableCell>
                     <TableCell className="text-right">
                       {exchange.status === "pending" && (
