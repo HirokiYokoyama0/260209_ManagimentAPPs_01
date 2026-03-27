@@ -23,7 +23,15 @@
       "Bash(npx tsx tests/verify-rls-policies.ts)",
       "Bash(npx tsx tests/test-delete-real-user.ts)",
       "Bash(npx tsx tests/final-investigation-delete-policy.ts)",
-      "Bash(npx tsx scripts/check-database-size.ts)"
+      "Bash(npx tsx scripts/check-database-size.ts)",
+      "Bash(git reset --soft HEAD~2)",
+      "Bash(cmd.exe /c \"dir /B Doc_dashboard\\*.md\")",
+      "Bash(cmd.exe /c \"del Doc_dashboard\\55_管理ダッシュボード開発者への連絡事項.md\")",
+      "Bash(cmd.exe /c \"taskkill /PID 34468 /F\")",
+      "Bash(npx tsx scripts/check-rewards-data.ts)",
+      "Bash(npx tsx scripts/check-db-status.ts)",
+      "Bash(npx tsx scripts/verify-migration-result.ts)",
+      "Bash(npx tsx scripts/check-duplicates.ts)"
     ],
     "deny": [],
     "ask": []

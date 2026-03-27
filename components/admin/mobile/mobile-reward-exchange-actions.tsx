@@ -5,7 +5,7 @@ import { Check, X, Trash2 } from "lucide-react";
 
 type Props = {
   exchangeId: string;
-  status: "pending" | "completed" | "cancelled";
+  status: "pending" | "completed" | "cancelled" | "expired";
   onComplete: (id: string) => void;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;

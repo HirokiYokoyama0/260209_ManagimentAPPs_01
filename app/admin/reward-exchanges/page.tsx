@@ -41,15 +41,15 @@ export default function RewardExchangesPage() {
 
   // 引き渡し完了処理
   const handleComplete = async (id: string) => {
-    const staffName = prompt("担当者名を入力してください（例: 田中）");
-    if (!staffName) return;
+    const confirmed = confirm("特典を引き渡し完了にしますか？");
+    if (!confirmed) return;
 
     setIsProcessing(id);
     try {
       const response = await fetch(`/api/reward-exchanges/${id}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completedBy: staffName }),
+        body: JSON.stringify({}), // スタッフ情報は自動取得
       });
 
       if (response.ok) {
@@ -161,7 +161,7 @@ export default function RewardExchangesPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">特典交換履歴</h1>
           <p className="text-sm text-slate-500">
-            患者がスタンプを使って交換した特典を管理
+            マイルストーン到達で付与された特典と手動交換の特典を管理
           </p>
         </div>
       </div>
@@ -253,12 +253,19 @@ export default function RewardExchangesPage() {
                             className="h-8 w-8 rounded object-cover"
                           />
                         )}
-                        <span>{exchange.reward_name}</span>
+                        <div className="flex flex-col">
+                          <span>{exchange.reward_name}</span>
+                          {exchange.milestone_reached && (
+                            <span className="text-xs text-purple-600">
+                              {exchange.milestone_reached}個目で獲得
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <span className="font-semibold text-purple-600">
-                        {exchange.stamp_count_used}
+                        {exchange.milestone_reached || exchange.stamp_count_used}
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">

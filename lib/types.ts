@@ -161,12 +161,18 @@ export type RewardExchange = {
   user_id: string;
   reward_id: string;
   stamp_count_used: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'completed' | 'cancelled' | 'expired';
   exchanged_at: string;
-  completed_at: string | null;
-  completed_by: string | null;
-  notes: string | null;
+  notes: string | null; // スタッフの操作履歴なども記録される
   created_at: string;
+  /** マイルストーン型特典: 何個目のスタンプで交換したか（10, 20, 50など） */
+  milestone_reached?: number | null;
+  /** マイルストーン型特典かどうか */
+  is_milestone_based?: boolean;
+  /** 有効期限（自費メニュー用） */
+  valid_until?: string | null;
+  /** 初回特典かどうか（POIC本体込など） */
+  is_first_time?: boolean;
 };
 
 /** 詳細情報付き交換履歴（JOIN結果） */

@@ -1,6 +1,7 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
+import { handleStampMilestones } from "@/lib/milestones";
 import { NextRequest, NextResponse } from "next/server";
 
 const MAX_STAMPS = 999;
@@ -126,7 +127,20 @@ export async function PATCH(
       },
     });
 
-    // 6️⃣ 更新後のプロフィールを取得して返却
+    // 6️⃣ マイルストーン判定と特典自動付与
+    let milestones: any[] = [];
+    try {
+      console.log(`🎯 マイルストーン判定開始: ${currentStampCount} → ${newCount}`);
+      milestones = await handleStampMilestones(id, currentStampCount, newCount);
+      if (milestones.length > 0) {
+        console.log(`✅ マイルストーン特典付与: ${milestones.length}件`);
+      }
+    } catch (milestoneError) {
+      console.error("❌ マイルストーン処理エラー:", milestoneError);
+      // エラーでもスタンプ付与は成功しているので続行
+    }
+
+    // 7️⃣ 更新後のプロフィールを取得して返却
     const { data: updatedProfile } = await supabase
       .from("profiles")
       .select("*")
@@ -135,7 +149,10 @@ export async function PATCH(
 
     console.log(`✅ スタンプ数を ${currentStampCount} → ${newCount} に変更しました`);
 
-    return NextResponse.json(updatedProfile || { id, stamp_count: newCount });
+    return NextResponse.json({
+      ...updatedProfile || { id, stamp_count: newCount },
+      milestones: milestones // マイルストーン情報も返却
+    });
   } catch (error: any) {
     console.error("❌ スタンプ変更エラー:", error);
     return NextResponse.json(

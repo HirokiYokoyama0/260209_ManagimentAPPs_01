@@ -1,5 +1,7 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
+import { verifySessionCookieServer } from "@/lib/simple-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -12,14 +14,30 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { completedBy } = body;
 
-    if (!completedBy) {
-      return NextResponse.json(
-        { error: "担当者名が必要です" },
-        { status: 400 }
-      );
+    // セッションからスタッフ情報を取得
+    const allCookies = request.cookies.getAll();
+    const sessionCookie = allCookies.find(c => c.name.startsWith('admin_session'));
+
+    let completedBy = "管理者";
+    let staffId: string | null = null;
+
+    if (sessionCookie) {
+      const session = verifySessionCookieServer(sessionCookie.value);
+      if (session && session.staffId) {
+        staffId = session.staffId;
+        // スタッフ情報を取得
+        const adminClient = createSupabaseAdminClient();
+        const { data: staff } = await adminClient
+          .from("staff")
+          .select("display_name")
+          .eq("id", session.staffId)
+          .single();
+
+        if (staff?.display_name) {
+          completedBy = staff.display_name;
+        }
+      }
     }
 
     const supabase = await createSupabaseServerClient();
@@ -41,11 +59,17 @@ export async function POST(
 
     console.log("Found record:", existingRecord);
 
-    // ステータスを completed に更新（テーブルにはstatusカラムのみ存在）
+    // ステータスを completed に更新し、notesにスタッフ情報を記録
+    const completedNote = `[${new Date().toISOString()}] ${completedBy} が引き渡し完了`;
+    const updatedNotes = existingRecord.notes
+      ? `${existingRecord.notes}\n${completedNote}`
+      : completedNote;
+
     const { data: updatedData, error: updateError, count } = await supabase
       .from("reward_exchanges")
       .update({
         status: "completed",
+        notes: updatedNotes,
       })
       .eq("id", id)
       .select();

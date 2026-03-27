@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createSupabaseServerClient();
 
-    // JOINクエリで一覧取得
+    // マイルストーン型特典の交換履歴を取得
+    // 注: reward_exchanges.reward_id の外部キー制約は削除されているため、手動でJOINする
     let query = supabase
       .from("reward_exchanges")
       .select(`
@@ -23,12 +24,9 @@ export async function GET(request: NextRequest) {
           display_name,
           picture_url,
           ticket_number
-        ),
-        rewards:reward_id (
-          name,
-          image_url
         )
       `)
+      .eq("is_milestone_based", true)
       .order("exchanged_at", { ascending: false })
       .limit(50);
 
@@ -51,25 +49,48 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ exchanges: [] });
     }
 
-    // データ整形
+    // milestone_rewards テーブルから特典情報を取得（手動JOIN用）
+    const { data: milestoneRewards, error: rewardsError } = await supabase
+      .from("milestone_rewards")
+      .select("id, name, description, milestone_type");
+
+    if (rewardsError) {
+      console.error("Error fetching milestone rewards:", rewardsError);
+      return NextResponse.json(
+        { error: "特典情報の取得に失敗しました" },
+        { status: 500 }
+      );
+    }
+
+    // reward_id から特典情報を引けるようにマップ化
+    const rewardsMap = new Map(
+      (milestoneRewards || []).map((r) => [r.id, r])
+    );
+
+    // データ整形（手動でJOIN）
     const formattedExchanges: RewardExchangeWithDetails[] = exchanges
-      .map((ex: any) => ({
-        id: ex.id,
-        user_id: ex.user_id,
-        user_name: ex.profiles?.display_name || "不明",
-        user_picture_url: ex.profiles?.picture_url || null,
-        user_medical_record_number: ex.profiles?.ticket_number || null,
-        reward_id: ex.reward_id,
-        reward_name: ex.rewards?.name || "不明",
-        reward_image_url: ex.rewards?.image_url || null,
-        stamp_count_used: ex.stamp_count_used,
-        status: ex.status,
-        exchanged_at: ex.exchanged_at,
-        completed_at: ex.completed_at,
-        completed_by: ex.completed_by,
-        notes: ex.notes,
-        created_at: ex.created_at,
-      }))
+      .map((ex: any) => {
+        const reward = rewardsMap.get(ex.reward_id);
+        return {
+          id: ex.id,
+          user_id: ex.user_id,
+          user_name: ex.profiles?.display_name || "不明",
+          user_picture_url: ex.profiles?.picture_url || null,
+          user_medical_record_number: ex.profiles?.ticket_number || null,
+          reward_id: ex.reward_id,
+          reward_name: reward?.name || "不明な特典",
+          reward_image_url: null, // milestone_rewardsにはimage_urlが存在しない
+          stamp_count_used: ex.milestone_reached || ex.stamp_count_used, // milestone_reached を優先
+          milestone_reached: ex.milestone_reached, // マイルストーン情報を追加
+          is_milestone_based: ex.is_milestone_based,
+          valid_until: ex.valid_until,
+          is_first_time: ex.is_first_time,
+          status: ex.status,
+          exchanged_at: ex.exchanged_at,
+          notes: ex.notes, // スタッフの操作履歴が記録される
+          created_at: ex.created_at,
+        };
+      })
       .filter((ex: RewardExchangeWithDetails) => {
         // 検索フィルタ（患者名・診察券番号・特典名）
         if (search) {

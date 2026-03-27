@@ -18,6 +18,7 @@ const statusConfig = {
   pending: { label: "未引渡", variant: "default" as const, color: "bg-blue-100 text-blue-800" },
   completed: { label: "引渡完了", variant: "secondary" as const, color: "bg-emerald-100 text-emerald-800" },
   cancelled: { label: "キャンセル", variant: "destructive" as const, color: "bg-red-100 text-red-800" },
+  expired: { label: "期限切れ", variant: "secondary" as const, color: "bg-gray-100 text-gray-600" },
 };
 
 export function MobileRewardExchangeCard({
@@ -44,9 +45,16 @@ export function MobileRewardExchangeCard({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Gift className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{exchange.reward_name}</span>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Gift className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{exchange.reward_name}</span>
+            </div>
+            {exchange.milestone_reached && (
+              <span className="text-xs text-purple-600 ml-5">
+                {exchange.milestone_reached}個目で獲得
+              </span>
+            )}
           </div>
         </div>
         <Badge className={`${config.color} shrink-0 ml-2`}>
@@ -59,7 +67,7 @@ export function MobileRewardExchangeCard({
         <div className="flex items-center gap-2">
           <Award className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-muted-foreground">スタンプ数:</span>
-          <span className="font-semibold">{exchange.stamp_count_used}個</span>
+          <span className="font-semibold">{exchange.milestone_reached || exchange.stamp_count_used}個</span>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
