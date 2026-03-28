@@ -50,8 +50,8 @@ interface FlexTemplate {
   name: string;
   description: string;
   emoji: string;
-  jsonFile: string;
   variables: string[];
+  category: string;
 }
 
 function NewBroadcastTab() {
@@ -70,7 +70,7 @@ function NewBroadcastTab() {
 
   // Flex Messageテンプレートを読み込み
   useEffect(() => {
-    fetch("/flex-templates/manifest.json")
+    fetch("/api/flex-templates")
       .then((res) => res.json())
       .then((data) => {
         setFlexTemplates(data.templates || []);
@@ -371,7 +371,7 @@ function NewBroadcastTab() {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
             <p className="text-blue-800">
-              💡 <strong>ヒント:</strong> カードテンプレートは <code className="bg-blue-100 px-1 py-0.5 rounded">public/flex-templates/</code> フォルダに配置されています。新しいテンプレートを追加するには、JSONファイルを配置して <code className="bg-blue-100 px-1 py-0.5 rounded">manifest.json</code> を更新してください。
+              💡 <strong>ヒント:</strong> カードテンプレートは <code className="bg-blue-100 px-1 py-0.5 rounded">lib/flex-templates/</code> フォルダに配置されています。新しいテンプレートを追加するには、TypeScriptファイルとして作成し、<code className="bg-blue-100 px-1 py-0.5 rounded">index.ts</code> に登録してください。
             </p>
           </div>
         </div>

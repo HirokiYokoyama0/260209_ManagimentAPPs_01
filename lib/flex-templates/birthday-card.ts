@@ -1,0 +1,115 @@
+/**
+ * 誕生日カード Flex Message テンプレート
+ */
+export const birthdayCardTemplate = {
+  type: "bubble",
+  size: "mega",
+  hero: {
+    type: "image",
+    url: "https://260209-managiment-ap-ps-01.vercel.app/images/はぶらしか_ハブラーシカ_キャラ.png",
+    size: "full",
+    aspectRatio: "2:1",
+    aspectMode: "fit",
+    backgroundColor: "#F0F8FF",
+  },
+  body: {
+    type: "box",
+    layout: "vertical",
+    spacing: "md",
+    contents: [
+      {
+        type: "text",
+        text: "Happy Birthday!",
+        weight: "bold",
+        size: "xl",
+        color: "#8B4513",
+        align: "center",
+      },
+      {
+        type: "text",
+        text: "{name}様、お誕生日おめでとうございます！",
+        weight: "bold",
+        size: "md",
+        wrap: true,
+        margin: "lg",
+      },
+      {
+        type: "text",
+        text: "今月は、自分へのご褒美に特別なケアを。心ばかりのお祝いとして、優待クーポンをご用意しました。",
+        size: "sm",
+        color: "#666666",
+        wrap: true,
+        margin: "md",
+      },
+      {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#FDF5E6",
+        margin: "lg",
+        paddingAll: "10px",
+        cornerRadius: "md",
+        contents: [
+          {
+            type: "text",
+            text: "【誕生月特別クーポン】",
+            weight: "bold",
+            size: "sm",
+            color: "#D2691E",
+            align: "center",
+          },
+          {
+            type: "text",
+            text: "対象自費メニュー 10%OFF",
+            weight: "bold",
+            size: "lg",
+            color: "#333333",
+            align: "center",
+            margin: "xs",
+          },
+          {
+            type: "text",
+            text: "有効期限：{valid_until}",
+            size: "xs",
+            color: "#999999",
+            align: "center",
+            margin: "xs",
+          },
+        ],
+      },
+    ],
+  },
+  footer: {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    contents: [
+      {
+        type: "button",
+        action: {
+          type: "uri",
+          label: "対象メニューを見る",
+          uri: "https://liff.line.me/2009075851-74EieWb4?page=birthday-menu",
+        },
+        style: "primary",
+        color: "#00C300",
+      },
+      {
+        type: "button",
+        action: {
+          type: "uri",
+          label: "今すぐ予約する",
+          uri: "https://reserva.be/tsukubawhite",
+        },
+        margin: "sm",
+      },
+      {
+        type: "text",
+        text: "つくばホワイト歯科 一同",
+        size: "xs",
+        color: "#AAAAAA",
+        align: "center",
+        margin: "lg",
+      },
+    ],
+  },
+} as const;

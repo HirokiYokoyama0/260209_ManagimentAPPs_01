@@ -123,25 +123,13 @@ async function sendFlexMessages(
     throw new Error("LINE Channel Access Token が設定されていません");
   }
 
-  // Flex Messageテンプレートを読み込み（Vercel対応: HTTP経由で取得）
-  let flexTemplate: any;
-  try {
-    // 本番環境ではVERCEL_URLを使用、開発環境ではlocalhostを使用
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3003";
+  // Flex Messageテンプレートを読み込み（コード内埋め込み方式）
+  const { getFlexTemplate } = await import("@/lib/flex-templates");
+  const flexTemplate = getFlexTemplate(templateId);
 
-    const templateUrl = `${baseUrl}/flex-templates/${templateId}.json`;
-    const response = await fetch(templateUrl);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    flexTemplate = await response.json();
-  } catch (error) {
-    console.error("Failed to load flex template:", error);
-    throw new Error(`Flex templateの読み込みに失敗しました: ${templateId}`);
+  if (!flexTemplate) {
+    console.error(`Flex template not found: ${templateId}`);
+    throw new Error(`Flex templateが見つかりません: ${templateId}`);
   }
 
   let successCount = 0;
