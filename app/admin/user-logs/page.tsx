@@ -50,6 +50,7 @@ const EVENT_LABELS: Record<string, string> = {
   session_end: "セッション終了",
   stamp_page_view: "スタンプページ閲覧",
   stamp_scan_start: "QRスキャン開始",
+  stamp_scan_api_request: "QRスキャンAPIリクエスト",
   stamp_scan_success: "QRスキャン成功",
   stamp_scan_fail: "QRスキャン失敗",
   stamp_history_view: "スタンプ履歴閲覧",
@@ -93,13 +94,27 @@ function userDisplayName(log: EventLogItem): string {
 function formatMetadata(meta: Record<string, unknown> | null): string {
   if (!meta || Object.keys(meta).length === 0) return "—";
   const parts: string[] = [];
+
+  // スタンプ関連
   if (meta.current_stamp_count !== undefined) parts.push(`スタンプ: ${meta.current_stamp_count}`);
   if (meta.stamps_added !== undefined) parts.push(`+${meta.stamps_added}`);
   if (meta.type !== undefined) parts.push(String(meta.type));
+
+  // QRスキャン関連（新規追加）
+  if (meta.device_type !== undefined) parts.push(`デバイス: ${meta.device_type}`);
+  if (meta.qr_parsed !== undefined) {
+    const parsed = meta.qr_parsed as any;
+    parts.push(`QR: ${parsed.type || '?'} ${parsed.stamps || '?'}個`);
+  }
+  if (meta.error_type !== undefined) parts.push(`エラー: ${meta.error_type}`);
+  if (meta.http_status !== undefined) parts.push(`HTTP ${meta.http_status}`);
+
+  // その他
   if (meta.result !== undefined) parts.push(String(meta.result));
   if (meta.stamps_won !== undefined) parts.push(`獲得: ${meta.stamps_won}`);
   if (meta.from_page !== undefined) parts.push(`from: ${meta.from_page}`);
   if (meta.error !== undefined) parts.push(`err: ${String(meta.error).slice(0, 20)}`);
+
   if (parts.length > 0) return parts.join(", ");
   return JSON.stringify(meta).slice(0, 60) + (JSON.stringify(meta).length > 60 ? "…" : "");
 }
