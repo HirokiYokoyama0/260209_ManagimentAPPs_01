@@ -1,0 +1,14 @@
+{
+  "templates": [
+    {
+      "id": "birthday-card",
+      "name": "誕生日カード",
+      "description": "お誕生日おめでとうメッセージと特別優待クーポン",
+      "emoji": "🎂",
+      "jsonFile": "/flex-templates/birthday-card.json",
+      "variables": ["name", "valid_until"],
+      "category": "celebration",
+      "createdAt": "2026-03-28"
+    }
+  ]
+}

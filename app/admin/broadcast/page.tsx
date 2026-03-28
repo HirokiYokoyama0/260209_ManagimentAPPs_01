@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,9 +43,23 @@ export default function BroadcastPage() {
   );
 }
 
+type MessageType = "text" | "flex";
+
+interface FlexTemplate {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  jsonFile: string;
+  variables: string[];
+}
+
 function NewBroadcastTab() {
   const [segment, setSegment] = useState<BroadcastSegment>({});
+  const [messageType, setMessageType] = useState<MessageType>("text");
   const [message, setMessage] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [flexTemplates, setFlexTemplates] = useState<FlexTemplate[]>([]);
   const [preview, setPreview] = useState<{
     count: number;
     preview: Profile[];
@@ -53,6 +67,19 @@ function NewBroadcastTab() {
   } | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // Flex Messageテンプレートを読み込み
+  useEffect(() => {
+    fetch("/flex-templates/manifest.json")
+      .then((res) => res.json())
+      .then((data) => {
+        setFlexTemplates(data.templates || []);
+        if (data.templates && data.templates.length > 0) {
+          setSelectedTemplate(data.templates[0].id);
+        }
+      })
+      .catch((err) => console.error("Failed to load flex templates:", err));
+  }, []);
 
   // プレビュー取得
   const handlePreview = async () => {
@@ -75,8 +102,13 @@ function NewBroadcastTab() {
 
   // 送信実行
   const handleSend = async () => {
-    if (!message.trim()) {
+    if (messageType === "text" && !message.trim()) {
       alert("メッセージを入力してください");
+      return;
+    }
+
+    if (messageType === "flex" && !selectedTemplate) {
+      alert("カードテンプレートを選択してください");
       return;
     }
 
@@ -85,8 +117,9 @@ function NewBroadcastTab() {
       return;
     }
 
+    const messageTypeLabel = messageType === "text" ? "テキストメッセージ" : "カードタイプメッセージ";
     const confirmed = confirm(
-      `${preview.count}名に送信します。よろしいですか？\n\n推定メッセージ通数: ${preview.estimatedCost}通`
+      `${preview.count}名に${messageTypeLabel}を送信します。よろしいですか？\n\n推定メッセージ通数: ${preview.estimatedCost}通`
     );
 
     if (!confirmed) return;
@@ -99,6 +132,8 @@ function NewBroadcastTab() {
         body: JSON.stringify({
           segment,
           message,
+          messageType,
+          flexTemplateId: messageType === "flex" ? selectedTemplate : undefined,
           sentBy: "admin",
         }),
       });
@@ -258,9 +293,94 @@ function NewBroadcastTab() {
         </div>
       )}
 
-      {/* メッセージ */}
+      {/* メッセージタイプ選択 */}
       <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
-        <h2 className="text-xl font-semibold">メッセージ</h2>
+        <h2 className="text-xl font-semibold">📩 メッセージタイプ</h2>
+
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors" style={{ borderColor: messageType === "text" ? "#3b82f6" : "#e5e7eb" }}>
+            <input
+              type="radio"
+              name="messageType"
+              value="text"
+              checked={messageType === "text"}
+              onChange={(e) => setMessageType(e.target.value as MessageType)}
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <div className="font-medium">テキストメッセージ</div>
+              <div className="text-sm text-gray-600">シンプルな文字メッセージを送信</div>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors" style={{ borderColor: messageType === "flex" ? "#3b82f6" : "#e5e7eb" }}>
+            <input
+              type="radio"
+              name="messageType"
+              value="flex"
+              checked={messageType === "flex"}
+              onChange={(e) => setMessageType(e.target.value as MessageType)}
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <div className="font-medium">カードタイプメッセージ (Flex Message)</div>
+              <div className="text-sm text-gray-600">画像・ボタン付きのリッチメッセージを送信</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* カードテンプレート選択 (Flex Messageの場合) */}
+      {messageType === "flex" && (
+        <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
+          <h2 className="text-xl font-semibold">カードテンプレート選択</h2>
+
+          {flexTemplates.length === 0 ? (
+            <p className="text-gray-500 text-sm">テンプレートを読み込んでいます...</p>
+          ) : (
+            <div className="space-y-3">
+              {flexTemplates.map((template) => (
+                <label
+                  key={template.id}
+                  className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ borderColor: selectedTemplate === template.id ? "#3b82f6" : "#e5e7eb" }}
+                >
+                  <input
+                    type="radio"
+                    name="flexTemplate"
+                    value={template.id}
+                    checked={selectedTemplate === template.id}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {template.emoji} {template.name}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">{template.description}</div>
+                    {template.variables.length > 0 && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        使用できる変数: {template.variables.map((v) => `{${v}}`).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+            <p className="text-blue-800">
+              💡 <strong>ヒント:</strong> カードテンプレートは <code className="bg-blue-100 px-1 py-0.5 rounded">public/flex-templates/</code> フォルダに配置されています。新しいテンプレートを追加するには、JSONファイルを配置して <code className="bg-blue-100 px-1 py-0.5 rounded">manifest.json</code> を更新してください。
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* メッセージ (テキストメッセージの場合) */}
+      {messageType === "text" && (
+        <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
+          <h2 className="text-xl font-semibold">メッセージ</h2>
 
         <div>
           <Label>メッセージ内容</Label>
@@ -299,7 +419,11 @@ function NewBroadcastTab() {
             {"{ticket_number}"}を挿入
           </Button>
         </div>
+      </div>
+      )}
 
+      {/* 送信ボタン */}
+      <div className="bg-white p-6 rounded-lg border shadow-sm">
         <Button
           onClick={handleSend}
           disabled={!preview || preview.count === 0 || isSending}

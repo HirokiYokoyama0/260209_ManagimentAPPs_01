@@ -10,8 +10,11 @@ import type { BroadcastSendRequest, Profile } from "@/lib/types";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body: BroadcastSendRequest = await request.json();
-    const { segment, message, sentBy } = body;
+    const body: BroadcastSendRequest & {
+      messageType?: "text" | "flex";
+      flexTemplateId?: string;
+    } = await request.json();
+    const { segment, message, sentBy, messageType = "text", flexTemplateId } = body;
 
     const supabase = await createSupabaseServerClient();
 
@@ -52,9 +55,15 @@ export async function POST(request: NextRequest) {
     // 4. LINE Messaging API で送信（個別に変数置換）
     if (lineIds.length > 0) {
       try {
-        const result = await sendPersonalizedMessages(message, targetProfiles);
-        successCount = result.successCount;
-        failedCount = result.failedCount;
+        if (messageType === "flex" && flexTemplateId) {
+          const result = await sendFlexMessages(flexTemplateId, targetProfiles);
+          successCount = result.successCount;
+          failedCount = result.failedCount;
+        } else {
+          const result = await sendPersonalizedMessages(message, targetProfiles);
+          successCount = result.successCount;
+          failedCount = result.failedCount;
+        }
       } catch (error) {
         console.error("Error sending messages:", error);
         failedCount = lineIds.length;
@@ -97,6 +106,111 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Flex Messageを各ユーザーに送信（変数置換あり）
+ */
+async function sendFlexMessages(
+  templateId: string,
+  profiles: Profile[]
+): Promise<{ successCount: number; failedCount: number }> {
+  const accessToken =
+    process.env.LINE_CHANNEL_ACCESS_TOKEN ||
+    (await getShortLivedToken());
+
+  if (!accessToken) {
+    throw new Error("LINE Channel Access Token が設定されていません");
+  }
+
+  // Flex Messageテンプレートを読み込み
+  let flexTemplate: any;
+  try {
+    const fs = await import("fs/promises");
+    const path = await import("path");
+    const templatePath = path.join(process.cwd(), "public", "flex-templates", `${templateId}.json`);
+    const templateJson = await fs.readFile(templatePath, "utf-8");
+    flexTemplate = JSON.parse(templateJson);
+  } catch (error) {
+    console.error("Failed to load flex template:", error);
+    throw new Error(`Flex templateの読み込みに失敗しました: ${templateId}`);
+  }
+
+  let successCount = 0;
+  let failedCount = 0;
+
+  // LINE友だち登録済みのユーザーのみ
+  const targetUsers = profiles.filter(
+    (p) => p.line_user_id && p.is_line_friend === true
+  );
+
+  // 各ユーザーごとに個別送信（Push Message API）
+  for (const profile of targetUsers) {
+    try {
+      // Flex Messageテンプレートの変数を置換
+      const personalizedFlex = replaceFlexMessageVariables(flexTemplate, profile);
+
+      const response = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          to: profile.line_user_id,
+          messages: [
+            {
+              type: "flex",
+              altText: `${profile.display_name || profile.real_name || "お客"}様へのメッセージ`,
+              contents: personalizedFlex,
+            },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        successCount++;
+      } else {
+        const errorData = await response.json();
+        console.error(`LINE API Error for ${profile.display_name}:`, errorData);
+        failedCount++;
+      }
+
+      // レート制限対策: 各送信後に50ms待機（1秒間に最大20件）
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } catch (error) {
+      console.error(`Error sending to ${profile.display_name}:`, error);
+      failedCount++;
+    }
+  }
+
+  return { successCount, failedCount };
+}
+
+/**
+ * Flex MessageのJSON内の変数を置換
+ */
+function replaceFlexMessageVariables(flexJson: any, profile: Profile): any {
+  // JSONを文字列化して変数を置換
+  let jsonString = JSON.stringify(flexJson);
+
+  // {name} を置換
+  const name = profile.display_name || profile.real_name || "お客様";
+  jsonString = jsonString.replace(/{name}/g, name);
+
+  // {valid_until} を置換（誕生月の末日を設定）
+  const now = new Date();
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const validUntil = `${lastDayOfMonth.getMonth() + 1}月${lastDayOfMonth.getDate()}日`;
+  jsonString = jsonString.replace(/{valid_until}/g, validUntil);
+
+  // {stamp_count} を置換
+  jsonString = jsonString.replace(/{stamp_count}/g, String(profile.stamp_count || 0));
+
+  // {ticket_number} を置換
+  jsonString = jsonString.replace(/{ticket_number}/g, profile.ticket_number || "未登録");
+
+  return JSON.parse(jsonString);
 }
 
 /**
