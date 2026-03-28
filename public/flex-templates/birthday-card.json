@@ -3,10 +3,11 @@
   "size": "mega",
   "hero": {
     "type": "image",
-    "url": "https://developers.line.biz/assets/img/icon-line.png",
+    "url": "https://260209-managiment-ap-ps-01.vercel.app/images/はぶらしか_ハブラーシカ_キャラ.png",
     "size": "full",
-    "aspectRatio": "20:13",
-    "aspectMode": "cover"
+    "aspectRatio": "1:1",
+    "aspectMode": "cover",
+    "backgroundColor": "#F0F8FF"
   },
   "body": {
     "type": "box",
