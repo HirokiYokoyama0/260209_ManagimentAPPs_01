@@ -5,8 +5,8 @@
     "type": "image",
     "url": "https://260209-managiment-ap-ps-01.vercel.app/images/はぶらしか_ハブラーシカ_キャラ.png",
     "size": "full",
-    "aspectRatio": "1:1",
-    "aspectMode": "cover",
+    "aspectRatio": "2:1",
+    "aspectMode": "fit",
     "backgroundColor": "#F0F8FF"
   },
   "body": {
