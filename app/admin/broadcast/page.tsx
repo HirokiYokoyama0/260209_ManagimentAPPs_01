@@ -253,6 +253,50 @@ function NewBroadcastTab() {
           </Label>
         </div>
 
+        {/* 誕生月フィルター */}
+        <div className="space-y-2">
+          <Label>誕生月で絞り込み</Label>
+          <div className="grid grid-cols-6 gap-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
+              const isSelected = segment.birthMonths?.includes(month) || false;
+              return (
+                <button
+                  key={month}
+                  type="button"
+                  onClick={() => {
+                    const current = segment.birthMonths || [];
+                    if (isSelected) {
+                      // 選択解除
+                      setSegment({
+                        ...segment,
+                        birthMonths: current.filter((m) => m !== month),
+                      });
+                    } else {
+                      // 選択追加
+                      setSegment({
+                        ...segment,
+                        birthMonths: [...current, month],
+                      });
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isSelected
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {month}月
+                </button>
+              );
+            })}
+          </div>
+          {segment.birthMonths && segment.birthMonths.length > 0 && (
+            <p className="text-sm text-gray-600">
+              選択中: {segment.birthMonths.sort((a, b) => a - b).map(m => `${m}月`).join(", ")}
+            </p>
+          )}
+        </div>
+
         <Button onClick={handlePreview} disabled={isLoadingPreview}>
           {isLoadingPreview ? (
             <>

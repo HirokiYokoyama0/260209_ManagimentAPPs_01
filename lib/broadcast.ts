@@ -55,6 +55,14 @@ export function filterProfilesBySegment(
       }
     }
 
+    // 誕生月によるフィルタ
+    if (segment.birthMonths && segment.birthMonths.length > 0) {
+      // 誕生月が未設定の場合は除外
+      if (!profile.birth_month) return false;
+      // 指定された誕生月のいずれかに該当するか
+      if (!segment.birthMonths.includes(profile.birth_month)) return false;
+    }
+
     return true;
   });
 }

@@ -28,6 +28,8 @@ export type Profile = {
   family_id?: string | null;
   /** 家族内の役割（parent: 保護者/代表者, child: 子ども/メンバー） */
   family_role?: 'parent' | 'child' | null;
+  /** 誕生月（1-12、1=1月、12=12月、誕生月クーポン配信用） */
+  birth_month?: number | null;
 };
 
 // ============================================
@@ -85,6 +87,8 @@ export type BroadcastSegment = {
   viewMode?: 'adult' | 'kids' | null;
   /** 公式アカ友だち登録済みのみ */
   isLineFriend?: boolean;
+  /** 誕生月（1-12、複数選択可能） */
+  birthMonths?: number[];
 };
 
 /** 配信プレビューのレスポンス */
