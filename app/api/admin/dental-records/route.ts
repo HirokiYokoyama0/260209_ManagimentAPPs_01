@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     const body = await request.json();
 
     const { patient_id, tooth_data, next_visit_memo, staff_memo, recorded_at } = body;
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     const { searchParams } = new URL(request.url);
     const patient_id = searchParams.get("patient_id");
 

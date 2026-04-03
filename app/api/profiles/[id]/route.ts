@@ -1,6 +1,6 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
 import { isValidMemoLength } from "@/lib/memo";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase
     .from("profiles")
@@ -88,7 +88,7 @@ export async function PATCH(
     updates.next_memo = next_memo === "" ? null : String(next_memo);
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("profiles")
     .update(updates)

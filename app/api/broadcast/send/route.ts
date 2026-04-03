@@ -1,6 +1,6 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
 import { filterProfilesBySegment, replaceMessageVariables } from "@/lib/broadcast";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { NextRequest, NextResponse } from "next/server";
 import type { BroadcastSendRequest, Profile } from "@/lib/types";
 
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     } = await request.json();
     const { segment, message, sentBy, messageType = "text", flexTemplateId } = body;
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     // 1. 対象者を取得
     const { data: profiles, error: fetchError } = await supabase

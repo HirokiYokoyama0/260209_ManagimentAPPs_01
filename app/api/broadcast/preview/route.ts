@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { filterProfilesBySegment } from "@/lib/broadcast";
 import type { BroadcastSegment, Profile } from "@/lib/types";
 
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const segment: BroadcastSegment = await request.json();
 
     // Supabaseから全患者データを取得
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     const { data: profiles, error } = await supabase
       .from("profiles")
       .select("*")

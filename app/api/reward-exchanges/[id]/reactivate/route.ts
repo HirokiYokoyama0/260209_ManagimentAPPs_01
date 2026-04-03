@@ -1,5 +1,4 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { verifySessionCookieServer } from "@/lib/simple-auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -45,7 +44,7 @@ export async function POST(
       }
     }
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     // 該当レコードを取得
     const { data: existingRecord, error: fetchError } = await supabase

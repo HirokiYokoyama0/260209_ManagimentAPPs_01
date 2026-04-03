@@ -1,5 +1,5 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -13,7 +13,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     // レコードを削除
     const { error } = await supabase

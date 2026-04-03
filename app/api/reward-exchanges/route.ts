@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import type { RewardExchangeWithDetails } from "@/lib/types";
 
 /**
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status"); // pending, completed, cancelled
     const search = searchParams.get("search"); // 患者名、診察券番号、または特典名で検索
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     // マイルストーン型特典の交換履歴を取得
     // 注: reward_exchanges.reward_id の外部キー制約は削除されているため、手動でJOINする

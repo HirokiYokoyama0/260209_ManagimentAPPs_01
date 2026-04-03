@@ -1,5 +1,4 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { handleStampMilestones } from "@/lib/milestones";
 import { NextRequest, NextResponse } from "next/server";
@@ -28,11 +27,9 @@ export async function PATCH(
   }
 
   try {
-    // 1️⃣ 通常のクライアント（ANON_KEY）
-    const supabase = await createSupabaseServerClient();
-
-    // 2️⃣ SERVICE_ROLE_KEY クライアント（DELETE操作用）
-    const supabaseAdmin = createSupabaseAdminClient();
+    // SERVICE_ROLE_KEY クライアント（全操作）
+    const supabase = createSupabaseAdminClient();
+    const supabaseAdmin = supabase; // 互換性のため
 
     // 現在のスタンプ数を取得
     const { data: profile, error: profileError } = await supabase

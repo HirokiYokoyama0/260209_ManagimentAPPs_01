@@ -1,5 +1,5 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -15,7 +15,7 @@ export async function POST(
     const body = await request.json();
     const { notes } = body;
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     // 交換履歴を取得
     const { data: exchange, error: fetchError } = await supabase
