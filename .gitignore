@@ -36,6 +36,13 @@ playwright-report/
 # テストスクリプト（調査用、本番に不要）
 tests/
 
+# 調査・チェック系スクリプト（一時的な調査用、リポジトリに含めない）
+scripts/check-*.ts
+scripts/investigate-*.ts
+scripts/analyze-*.ts
+scripts/compare-*.ts
+scripts/verify-*.ts
+
 # OS
 .DS_Store
 Thumbs.db
