@@ -31,6 +31,7 @@ export const mainNav: NavItem[] = [...primaryNav, ...secondaryNav];
 /** ツール */
 export const toolNav: NavItem[] = [
   { label: "テストQR", href: "/admin/qr" },
+  { label: "スタッフ一覧", href: "/admin/staff" },
 ];
 
 /** ログ（ドロップダウン用） */
