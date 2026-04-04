@@ -20,7 +20,7 @@ import type { RewardExchangeWithDetails } from "@/lib/types";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function RewardExchangesPage() {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("pending"); // デフォルトは「未引渡のみ」
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
@@ -208,17 +208,21 @@ export default function RewardExchangesPage() {
 
     switch (status) {
       case "available":
+        // 期限切れの場合は「期限切れ」のみ表示
+        if (expired) {
+          return (
+            <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+              期限切れ
+            </Badge>
+          );
+        }
+        // 期限内の場合は「交換可能」を表示
         return (
           <div className="flex flex-col gap-1 items-center">
             <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
               交換可能
             </Badge>
-            {expired && (
-              <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-xs">
-                ⚠️ 期限切れ
-              </Badge>
-            )}
-            {valid_until && !expired && (
+            {valid_until && (
               <span className="text-xs text-slate-500">
                 期限: {formatValidUntil(valid_until)}
               </span>
