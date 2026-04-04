@@ -10,12 +10,46 @@ import type { StaffWithLastLogin } from "@/app/api/admin/staff/route";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function StaffListPage() {
-  const { data, error, isLoading } = useSWR<{ staff: StaffWithLastLogin[] }>(
+  const { data, error, isLoading, mutate } = useSWR<{ staff: StaffWithLastLogin[] }>(
     "/api/admin/staff",
     fetcher
   );
 
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const handleToggleActive = async (staffId: string, currentIsActive: boolean) => {
+    if (
+      !confirm(
+        currentIsActive
+          ? "このスタッフアカウントを無効化しますか？\n無効化すると、このアカウントではログインできなくなります。"
+          : "このスタッフアカウントを有効化しますか？"
+      )
+    ) {
+      return;
+    }
+
+    setTogglingId(staffId);
+
+    try {
+      const res = await fetch(`/api/admin/staff/${staffId}/toggle-active`, {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        throw new Error("ステータスの更新に失敗しました");
+      }
+
+      const result = await res.json();
+      alert(result.message);
+      mutate(); // データを再取得
+    } catch (err) {
+      console.error("Toggle active error:", err);
+      alert("ステータスの更新に失敗しました");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   if (error) {
     return (
@@ -121,6 +155,9 @@ export default function StaffListPage() {
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
                   アカウント作成日
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -176,6 +213,23 @@ export default function StaffListPage() {
                       </span>
                     </div>
                   </td>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    <button
+                      onClick={() => handleToggleActive(staff.id, staff.is_active)}
+                      disabled={togglingId === staff.id}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                        staff.is_active
+                          ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {togglingId === staff.id
+                        ? "処理中..."
+                        : staff.is_active
+                        ? "無効化"
+                        : "有効化"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -188,8 +242,9 @@ export default function StaffListPage() {
         <p className="font-medium">ℹ️ スタッフアカウントについて</p>
         <ul className="mt-2 ml-4 list-disc space-y-1 text-blue-600">
           <li>「無効」に設定されたアカウントはログインできません</li>
+          <li>無効化されたアカウントは「有効化」ボタンで復活できます</li>
           <li>最終ログイン時刻は activity_logs の login イベントから取得しています</li>
-          <li>アカウントの追加・編集・削除機能は将来実装予定です</li>
+          <li>過去の操作ログとの整合性のため、アカウントの削除機能は提供していません</li>
         </ul>
       </div>
     </div>
