@@ -5,7 +5,7 @@ import { Check, X, Trash2 } from "lucide-react";
 
 type Props = {
   exchangeId: string;
-  status: "pending" | "completed" | "cancelled" | "expired";
+  status: "available" | "pending" | "completed" | "cancelled" | "expired";
   onComplete: (id: string) => void;
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
@@ -20,8 +20,8 @@ export function MobileRewardExchangeActions({
   onDelete,
   isProcessing,
 }: Props) {
-  if (status !== "pending") {
-    // 完了・キャンセル済みは削除ボタンのみ
+  if (status !== "available" && status !== "pending") {
+    // 完了・キャンセル・期限切れは削除ボタンのみ
     return (
       <Button
         size="sm"
@@ -36,7 +36,7 @@ export function MobileRewardExchangeActions({
     );
   }
 
-  // pending状態は3つのボタン
+  // available/pending状態は3つのボタン
   return (
     <div className="grid grid-cols-3 gap-2">
       <Button

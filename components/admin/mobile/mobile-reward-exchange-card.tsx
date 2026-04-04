@@ -15,6 +15,7 @@ type Props = {
 };
 
 const statusConfig = {
+  available: { label: "交換可能", variant: "default" as const, color: "bg-purple-100 text-purple-800" },
   pending: { label: "未引渡", variant: "default" as const, color: "bg-blue-100 text-blue-800" },
   completed: { label: "引渡完了", variant: "secondary" as const, color: "bg-emerald-100 text-emerald-800" },
   cancelled: { label: "キャンセル", variant: "destructive" as const, color: "bg-red-100 text-red-800" },

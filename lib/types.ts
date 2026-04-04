@@ -165,7 +165,7 @@ export type RewardExchange = {
   user_id: string;
   reward_id: string;
   stamp_count_used: number;
-  status: 'pending' | 'completed' | 'cancelled' | 'expired';
+  status: 'available' | 'pending' | 'completed' | 'cancelled' | 'expired';
   exchanged_at: string;
   notes: string | null; // スタッフの操作履歴なども記録される
   created_at: string;

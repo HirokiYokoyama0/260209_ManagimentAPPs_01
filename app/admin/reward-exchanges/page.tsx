@@ -207,6 +207,24 @@ export default function RewardExchangesPage() {
     const expired = isExpired(exchange);
 
     switch (status) {
+      case "available":
+        return (
+          <div className="flex flex-col gap-1 items-center">
+            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
+              交換可能
+            </Badge>
+            {expired && (
+              <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-xs">
+                ⚠️ 期限切れ
+              </Badge>
+            )}
+            {valid_until && !expired && (
+              <span className="text-xs text-slate-500">
+                期限: {formatValidUntil(valid_until)}
+              </span>
+            )}
+          </div>
+        );
       case "pending":
         return (
           <div className="flex flex-col gap-1 items-center">
@@ -273,6 +291,7 @@ export default function RewardExchangesPage() {
             className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
           >
             <option value="all">全ステータス</option>
+            <option value="available">交換可能のみ</option>
             <option value="pending">未引渡のみ</option>
             <option value="completed">引渡済のみ</option>
             <option value="cancelled">キャンセルのみ</option>
@@ -378,7 +397,7 @@ export default function RewardExchangesPage() {
                       {getStatusBadge(exchange)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {exchange.status === "pending" && (
+                      {(exchange.status === "available" || exchange.status === "pending") && (
                         <div className="flex justify-end gap-2">
                           {isExpired(exchange) && (
                             <Button
