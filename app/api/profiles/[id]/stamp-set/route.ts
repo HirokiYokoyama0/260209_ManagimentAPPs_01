@@ -1,6 +1,6 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
-import { invalidateMilestoneRewards } from "@/lib/milestones";
+import { invalidateMilestoneRewards, handleStampMilestones } from "@/lib/milestones";
 import { NextRequest, NextResponse } from "next/server";
 
 const MAX_STAMPS = 999;
@@ -124,9 +124,9 @@ export async function PATCH(
       },
     });
 
-    // 6️⃣ スタンプ減少時のマイルストーン特典無効化
-    // ⚠️ スタッフ操作では自動付与しない（LIFFアプリ側の仕様に統一）
+    // 6️⃣ マイルストーン特典の処理
     if (newCount < currentStampCount) {
+      // スタンプ減少時：該当する特典を削除
       try {
         console.log(`🔄 スタンプ減少を検出: ${currentStampCount} → ${newCount}`);
         await invalidateMilestoneRewards(id, currentStampCount, newCount);
@@ -134,6 +134,18 @@ export async function PATCH(
       } catch (error) {
         console.error("❌ マイルストーン無効化エラー:", error);
         // エラーでもスタンプ減少は成功しているので続行
+      }
+    } else if (newCount > currentStampCount) {
+      // スタンプ増加時：マイルストーン到達を判定して特典を自動付与
+      try {
+        console.log(`📈 スタンプ増加を検出: ${currentStampCount} → ${newCount}`);
+        const milestones = await handleStampMilestones(id, currentStampCount, newCount);
+        if (milestones.length > 0) {
+          console.log(`✅ マイルストーン特典を ${milestones.length}件 付与しました`);
+        }
+      } catch (error) {
+        console.error("❌ マイルストーン付与エラー:", error);
+        // エラーでもスタンプ増加は成功しているので続行
       }
     }
 
