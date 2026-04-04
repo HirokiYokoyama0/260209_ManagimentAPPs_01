@@ -293,36 +293,33 @@ export async function invalidateMilestoneRewards(
     return [];
   }
 
-  console.log(`🔄 ${rewards.length}件のマイルストーン特典を無効化します`);
+  console.log(`🔄 ${rewards.length}件のマイルストーン特典を削除します`);
 
-  // 各特典を 'cancelled' ステータスに変更
-  const cancelledRewards = [];
+  // 各特典を完全に削除（'cancelled' に変更するのではなく DELETE）
+  const deletedRewards = [];
 
   for (const reward of rewards) {
     try {
-      const { error: updateError } = await supabase
+      const { error: deleteError } = await supabase
         .from('reward_exchanges')
-        .update({
-          status: 'cancelled',
-          notes: `${reward.notes || ''}\n【自動キャンセル】スタンプ数が ${oldStampCount} から ${newStampCount} に減少したため無効化`
-        })
+        .delete()
         .eq('id', reward.id);
 
-      if (updateError) {
-        console.error(`❌ 特典無効化エラー (ID: ${reward.id}):`, updateError);
+      if (deleteError) {
+        console.error(`❌ 特典削除エラー (ID: ${reward.id}):`, deleteError);
       } else {
-        console.log(`✅ 特典無効化成功: マイルストーン ${reward.milestone_reached}`);
-        cancelledRewards.push(reward);
+        console.log(`✅ 特典削除成功: マイルストーン ${reward.milestone_reached}`);
+        deletedRewards.push(reward);
       }
     } catch (error) {
-      console.error(`❌ 特典無効化処理エラー (ID: ${reward.id}):`, error);
+      console.error(`❌ 特典削除処理エラー (ID: ${reward.id}):`, error);
       // エラーでも続行（他の特典は処理する）
     }
   }
 
-  console.log(`✅ マイルストーン特典無効化完了: ${cancelledRewards.length}件`);
+  console.log(`✅ マイルストーン特典削除完了: ${deletedRewards.length}件`);
 
-  return cancelledRewards;
+  return deletedRewards;
 }
 
 /**
