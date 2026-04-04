@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       .limit(50);
 
     // ステータスフィルタ
-    if (status && (status === "pending" || status === "completed" || status === "cancelled")) {
+    if (status && (status === "available" || status === "pending" || status === "completed" || status === "cancelled" || status === "expired")) {
       query = query.eq("status", status);
     }
 
