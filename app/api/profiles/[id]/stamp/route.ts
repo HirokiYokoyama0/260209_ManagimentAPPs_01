@@ -1,6 +1,6 @@
 import { logActivityIfStaff } from "@/lib/activity-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
-import { handleStampMilestones } from "@/lib/milestones";
+import { invalidateMilestoneRewards } from "@/lib/milestones";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
@@ -112,17 +112,17 @@ export async function PATCH(
       },
     });
 
-    // 6️⃣ マイルストーン判定と特典自動付与
-    let milestones: any[] = [];
-    try {
-      console.log(`🎯 マイルストーン判定開始: ${currentStampCount} → ${newCount}`);
-      milestones = await handleStampMilestones(id, currentStampCount, newCount);
-      if (milestones.length > 0) {
-        console.log(`✅ マイルストーン特典付与: ${milestones.length}件`);
+    // 6️⃣ スタンプ減少時のマイルストーン特典無効化
+    // ⚠️ スタッフ操作では自動付与しない（LIFFアプリ側の仕様に統一）
+    if (newCount < currentStampCount) {
+      try {
+        console.log(`🔄 スタンプ減少を検出: ${currentStampCount} → ${newCount}`);
+        await invalidateMilestoneRewards(id, currentStampCount, newCount);
+        console.log(`✅ マイルストーン特典を無効化しました`);
+      } catch (error) {
+        console.error("❌ マイルストーン無効化エラー:", error);
+        // エラーでもスタンプ減少は成功しているので続行
       }
-    } catch (milestoneError) {
-      console.error("❌ マイルストーン処理エラー:", milestoneError);
-      // エラーでもスタンプ付与は成功しているので続行
     }
 
     // 7️⃣ 更新後のプロフィールを取得して返却
@@ -134,10 +134,7 @@ export async function PATCH(
 
     console.log(`✅ スタンプ数を ${currentStampCount} → ${newCount} に変更しました`);
 
-    return NextResponse.json({
-      ...updatedProfile || { id, stamp_count: newCount },
-      milestones: milestones // マイルストーン情報も返却
-    });
+    return NextResponse.json(updatedProfile || { id, stamp_count: newCount });
   } catch (error: any) {
     console.error("❌ スタンプ増減エラー:", error);
     return NextResponse.json(

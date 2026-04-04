@@ -212,7 +212,7 @@ export async function grantMilestoneReward(
       user_id: userId,
       reward_id: reward.id,
       milestone_reached: milestone,
-      status: 'pending',
+      status: 'available', // ✅ 修正: 'pending' → 'available'（この特典と交換する状態）
       valid_until: validUntil?.toISOString(),
       is_first_time: isFirstTime,
       is_milestone_based: true,
@@ -246,6 +246,79 @@ export async function grantMilestoneReward(
   }
 
   return exchange;
+}
+
+/**
+ * スタンプ減少時のマイルストーン特典無効化
+ *
+ * スタンプ数が減少した際、該当するマイルストーン特典を無効化する
+ *
+ * @param userId - ユーザーID
+ * @param oldStampCount - 変更前のスタンプ数
+ * @param newStampCount - 変更後のスタンプ数
+ * @returns 無効化された特典の配列
+ */
+export async function invalidateMilestoneRewards(
+  userId: string,
+  oldStampCount: number,
+  newStampCount: number
+) {
+  // スタンプが減少していない場合は何もしない
+  if (newStampCount >= oldStampCount) {
+    return [];
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  // 新しいスタンプ数を超えるマイルストーン特典を取得
+  const { data: rewards, error: fetchError } = await supabase
+    .from('reward_exchanges')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_milestone_based', true)
+    .gt('milestone_reached', newStampCount)
+    .in('status', ['available', 'pending']); // 未使用の特典のみ
+
+  if (fetchError) {
+    console.error('❌ マイルストーン特典取得エラー:', fetchError);
+    throw new Error(`Failed to fetch milestone rewards: ${fetchError.message}`);
+  }
+
+  if (!rewards || rewards.length === 0) {
+    console.log(`ℹ️ 無効化対象のマイルストーン特典なし: ${oldStampCount} → ${newStampCount}`);
+    return [];
+  }
+
+  console.log(`🔄 ${rewards.length}件のマイルストーン特典を無効化します`);
+
+  // 各特典を 'cancelled' ステータスに変更
+  const cancelledRewards = [];
+
+  for (const reward of rewards) {
+    try {
+      const { error: updateError } = await supabase
+        .from('reward_exchanges')
+        .update({
+          status: 'cancelled',
+          notes: `${reward.notes || ''}\n【自動キャンセル】スタンプ数が ${oldStampCount} から ${newStampCount} に減少したため無効化`
+        })
+        .eq('id', reward.id);
+
+      if (updateError) {
+        console.error(`❌ 特典無効化エラー (ID: ${reward.id}):`, updateError);
+      } else {
+        console.log(`✅ 特典無効化成功: マイルストーン ${reward.milestone_reached}`);
+        cancelledRewards.push(reward);
+      }
+    } catch (error) {
+      console.error(`❌ 特典無効化処理エラー (ID: ${reward.id}):`, error);
+      // エラーでも続行（他の特典は処理する）
+    }
+  }
+
+  console.log(`✅ マイルストーン特典無効化完了: ${cancelledRewards.length}件`);
+
+  return cancelledRewards;
 }
 
 /**
