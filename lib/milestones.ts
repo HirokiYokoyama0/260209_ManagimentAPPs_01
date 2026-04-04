@@ -253,6 +253,8 @@ export async function grantMilestoneReward(
  *
  * スタンプ数が減少した際、該当するマイルストーン特典を無効化する
  *
+ * ⚠️ 管理ダッシュボード専用: SERVICE_ROLE_KEYを使用してRLSをバイパス
+ *
  * @param userId - ユーザーID
  * @param oldStampCount - 変更前のスタンプ数
  * @param newStampCount - 変更後のスタンプ数
@@ -268,7 +270,9 @@ export async function invalidateMilestoneRewards(
     return [];
   }
 
-  const supabase = await createSupabaseServerClient();
+  // ✅ 修正: AdminClient を使用（026マイグレーション後はANON_KEYでUPDATEできない）
+  const { createSupabaseAdminClient } = await import('@/lib/supabase/server-admin');
+  const supabase = createSupabaseAdminClient();
 
   // 新しいスタンプ数を超えるマイルストーン特典を取得
   const { data: rewards, error: fetchError } = await supabase
