@@ -334,7 +334,8 @@ export default function RewardExchangesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>患者名</TableHead>
+                  <TableHead>LINE表示名</TableHead>
+                  <TableHead>本名</TableHead>
                   <TableHead>特典名</TableHead>
                   <TableHead className="text-center">スタンプ数</TableHead>
                   <TableHead>交換日時</TableHead>
@@ -354,14 +355,21 @@ export default function RewardExchangesPage() {
                             className="h-8 w-8 rounded-full"
                           />
                         )}
-                        <div className="flex flex-col">
-                          <span>{exchange.user_name}</span>
-                          {exchange.user_medical_record_number && (
-                            <span className="text-xs text-slate-500">
-                              診察券: {exchange.user_medical_record_number}
-                            </span>
+                        <span>{exchange.user_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm">
+                          {exchange.user_real_name || (
+                            <span className="text-slate-400">—</span>
                           )}
-                        </div>
+                        </span>
+                        {exchange.user_medical_record_number && (
+                          <span className="text-xs text-slate-500">
+                            診察券: {exchange.user_medical_record_number}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

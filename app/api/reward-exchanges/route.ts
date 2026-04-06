@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         *,
         profiles:user_id (
           display_name,
+          real_name,
           picture_url,
           ticket_number
         )
@@ -75,6 +76,7 @@ export async function GET(request: NextRequest) {
           id: ex.id,
           user_id: ex.user_id,
           user_name: ex.profiles?.display_name || "不明",
+          user_real_name: ex.profiles?.real_name || null,
           user_picture_url: ex.profiles?.picture_url || null,
           user_medical_record_number: ex.profiles?.ticket_number || null,
           reward_id: ex.reward_id,

@@ -182,6 +182,7 @@ export type RewardExchange = {
 /** 詳細情報付き交換履歴（JOIN結果） */
 export type RewardExchangeWithDetails = RewardExchange & {
   user_name: string;
+  user_real_name: string | null;
   user_picture_url: string | null;
   user_medical_record_number: string | null;
   reward_name: string;
