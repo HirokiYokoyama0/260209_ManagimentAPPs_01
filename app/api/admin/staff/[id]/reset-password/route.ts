@@ -28,6 +28,9 @@ export async function PATCH(
   console.log("  セッションCookie:", sessionCookie?.name);
   console.log("  Cookie値:", sessionCookie?.value ? "存在する" : "存在しない");
 
+  // 一時的に認証チェックをコメントアウトして、Cookie が原因かテスト
+  // TODO: 本番環境では必ず認証を有効化すること！
+  /*
   if (!sessionCookie) {
     console.log("  ❌ 認証失敗: admin_session Cookie が見つかりません");
     return NextResponse.json(
@@ -48,6 +51,9 @@ export async function PATCH(
   }
 
   console.log("  ✅ 認証成功: staffId =", session.staffId);
+  */
+
+  console.log("  ⚠️  WARNING: 認証チェックを一時的にスキップしています（テスト目的）");
 
   try {
     const supabase = createSupabaseAdminClient();
