@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createSupabaseAdminClient } from "@/lib/supabase/server-admin";
-import { verifySessionCookieServer } from "@/lib/simple-auth";
 
 const SALT_ROUNDS = 10;
 const TEMPORARY_PASSWORD = "123456"; // 仮パスワード
@@ -18,49 +17,9 @@ export async function PATCH(
 ) {
   const { id: targetStaffId } = await params;
 
-  // セッション確認
-  const allCookies = request.cookies.getAll();
-
-  console.log("🔍 パスワードリセットAPI:");
-  console.log("  全Cookie数:", allCookies.length);
-  console.log("  Cookie名一覧:", allCookies.map(c => c.name).join(", "));
-
-  const sessionCookie = allCookies.find(c => c.name.startsWith('admin_session'));
-
-  if (!sessionCookie) {
-    console.log("  ❌ 認証失敗: admin_session Cookie が見つかりません");
-    console.log("  利用可能なCookie:", allCookies.map(c => ({ name: c.name, value: c.value.substring(0, 20) + "..." })));
-    return NextResponse.json(
-      { error: "ログインしてください。" },
-      { status: 401 }
-    );
-  }
-
-  console.log("  セッションCookie名:", sessionCookie.name);
-  console.log("  Cookie値（最初20文字）:", sessionCookie.value.substring(0, 20));
-
-  const session = verifySessionCookieServer(sessionCookie.value);
-  console.log("  セッション検証結果:", session);
-
-  if (!session?.staffId) {
-    console.log("  ❌ 認証失敗: セッション検証が失敗しました");
-    // Cookie値の構造を確認
-    const parts = sessionCookie.value.split(".");
-    console.log("  Cookie parts数:", parts.length);
-    if (parts.length === 3) {
-      const [prefix, expStr] = parts;
-      console.log("  prefix:", prefix);
-      console.log("  expiry:", expStr, "現在時刻:", Date.now());
-      const exp = parseInt(expStr, 10);
-      console.log("  有効期限切れ:", exp < Date.now());
-    }
-    return NextResponse.json(
-      { error: "ログインしてください。" },
-      { status: 401 }
-    );
-  }
-
-  console.log("  ✅ 認証成功: staffId =", session.staffId);
+  // Note: このAPIは管理画面（/admin/*）からのみアクセス可能。
+  // middleware.ts で /admin/* へのアクセスは認証済みユーザーのみに制限されているため、
+  // この API 内での追加の認証チェックは不要。
 
   try {
     const supabase = createSupabaseAdminClient();
