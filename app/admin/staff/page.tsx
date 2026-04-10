@@ -4,7 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { User, Clock, Calendar, CheckCircle2, XCircle } from "lucide-react";
+import { User, Clock, Calendar, CheckCircle2, XCircle, Key } from "lucide-react";
 import type { StaffWithLastLogin } from "@/app/api/admin/staff/route";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -17,6 +17,7 @@ export default function StaffListPage() {
 
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
 
   const handleToggleActive = async (staffId: string, currentIsActive: boolean) => {
     if (
@@ -48,6 +49,36 @@ export default function StaffListPage() {
       alert("ステータスの更新に失敗しました");
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleResetPassword = async (staffId: string, staffName: string) => {
+    if (!confirm(
+      `${staffName} のパスワードを仮パスワード "123456" にリセットしますか？\n\nリセット後、本人に仮パスワードを伝えてください。`
+    )) {
+      return;
+    }
+
+    setResettingId(staffId);
+
+    try {
+      const res = await fetch(`/api/admin/staff/${staffId}/reset-password`, {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "パスワードのリセットに失敗しました");
+      }
+
+      const result = await res.json();
+      alert(result.message);
+      mutate(); // データを再取得
+    } catch (err: any) {
+      console.error("Reset password error:", err);
+      alert(err.message || "パスワードのリセットに失敗しました");
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -214,21 +245,31 @@ export default function StaffListPage() {
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4">
-                    <button
-                      onClick={() => handleToggleActive(staff.id, staff.is_active)}
-                      disabled={togglingId === staff.id}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                        staff.is_active
-                          ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {togglingId === staff.id
-                        ? "処理中..."
-                        : staff.is_active
-                        ? "無効化"
-                        : "有効化"}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleToggleActive(staff.id, staff.is_active)}
+                        disabled={togglingId === staff.id}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                          staff.is_active
+                            ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                            : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {togglingId === staff.id
+                          ? "処理中..."
+                          : staff.is_active
+                          ? "無効化"
+                          : "有効化"}
+                      </button>
+                      <button
+                        onClick={() => handleResetPassword(staff.id, staff.display_name || staff.login_id)}
+                        disabled={resettingId === staff.id}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Key className="h-3.5 w-3.5" />
+                        {resettingId === staff.id ? "リセット中..." : "パスワードリセット"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -245,6 +286,8 @@ export default function StaffListPage() {
           <li>無効化されたアカウントは「有効化」ボタンで復活できます</li>
           <li>最終ログイン時刻は activity_logs の login イベントから取得しています</li>
           <li>過去の操作ログとの整合性のため、アカウントの削除機能は提供していません</li>
+          <li>「パスワードリセット」でスタッフのパスワードを仮パスワード "123456" にリセットできます</li>
+          <li>リセット後、本人に仮パスワードを伝え、ログイン後にパスワード変更を促してください</li>
         </ul>
       </div>
     </div>
