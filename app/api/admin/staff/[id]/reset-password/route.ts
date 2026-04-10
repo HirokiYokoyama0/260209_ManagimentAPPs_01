@@ -92,7 +92,7 @@ export async function PATCH(
       );
     }
 
-    console.log(`✅ スタッフ "${targetStaff.login_id}" のパスワードを仮パスワード "${TEMPORARY_PASSWORD}" にリセットしました（実行者: ${session.staffId}）`);
+    console.log(`✅ スタッフ "${targetStaff.login_id}" のパスワードを仮パスワード "${TEMPORARY_PASSWORD}" にリセットしました`);
 
     return NextResponse.json({
       success: true,
