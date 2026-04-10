@@ -22,7 +22,14 @@ export async function PATCH(
   const allCookies = request.cookies.getAll();
   const sessionCookie = allCookies.find(c => c.name.startsWith('admin_session'));
 
+  // デバッグログ
+  console.log("🔍 パスワードリセットAPI:");
+  console.log("  全Cookie:", allCookies.map(c => c.name));
+  console.log("  セッションCookie:", sessionCookie?.name);
+  console.log("  Cookie値:", sessionCookie?.value ? "存在する" : "存在しない");
+
   if (!sessionCookie) {
+    console.log("  ❌ 認証失敗: admin_session Cookie が見つかりません");
     return NextResponse.json(
       { error: "ログインしてください。" },
       { status: 401 }
@@ -30,12 +37,17 @@ export async function PATCH(
   }
 
   const session = verifySessionCookieServer(sessionCookie.value);
+  console.log("  セッション:", session);
+
   if (!session?.staffId) {
+    console.log("  ❌ 認証失敗: セッションなし");
     return NextResponse.json(
       { error: "ログインしてください。" },
       { status: 401 }
     );
   }
+
+  console.log("  ✅ 認証成功: staffId =", session.staffId);
 
   try {
     const supabase = createSupabaseAdminClient();
