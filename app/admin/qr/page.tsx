@@ -9,7 +9,6 @@ import { QRCodeSVG } from "qrcode.react";
 const PAYLOAD_PREMIUM = '{"type":"premium","stamps":15}';
 const PAYLOAD_REGULAR = '{"type":"regular","stamps":10}';
 const PAYLOAD_PURCHASE = '{"type":"purchase","stamps":5}';
-const PAYLOAD_SLOT_UNLOCK = '{"type":"slot-unlock","target":"family"}';
 
 /** ペイロード文字列をパースして stamps を取得。旧仕様の points が含まれていないか検証用 */
 function parsePayload(payload: string): { type: string; stamps: number; hasPoints: boolean } {
@@ -32,7 +31,6 @@ export default function TestQRPage() {
   const LIFF_URL_CAMERA_PREMIUM = "https://liff.line.me/2009075851-74EieWb4?action=stamp&type=qr&amount=15&location=entrance";
   const LIFF_URL_CAMERA_REGULAR = "https://liff.line.me/2009075851-74EieWb4?action=stamp&type=qr&amount=10&location=entrance";
   const LIFF_URL_CAMERA_PURCHASE = "https://liff.line.me/2009075851-74EieWb4?action=stamp&type=purchase&amount=5&location=shop";
-  const LIFF_URL_SLOT_UNLOCK = "https://liff.line.me/2009075851-74EieWb4?action=slot-unlock&target=family";
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -52,7 +50,7 @@ export default function TestQRPage() {
         <p className="text-sm text-slate-600 mb-4">
           QRスキャン → LIFF起動 → URLパラメータ検出 → 自動API実行 → 完了画面
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* カメラ用: Premium 15スタンプ */}
           <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-6 shadow-sm">
             <h3 className="text-base font-medium text-blue-900 mb-1">
@@ -127,33 +125,6 @@ export default function TestQRPage() {
               ⚠ 注意: 繰り返しスキャン可能。運用時はスタッフ立会いのもと使用
             </p>
           </div>
-
-          {/* カメラ用: スロットゲーム解放（キッズ用） */}
-          <div className="rounded-xl border-2 border-purple-300 bg-purple-50 p-6 shadow-sm">
-            <h3 className="text-base font-medium text-purple-900 mb-1">
-              🎰 スロットゲーム解放（キッズ用）
-            </h3>
-            <p className="text-xs text-purple-700 mb-4">
-              家族全員がゲームプレイ可能に
-            </p>
-            <div className="flex justify-center bg-white rounded-lg p-4">
-              <QRCodeSVG
-                value={LIFF_URL_SLOT_UNLOCK}
-                size={180}
-                level="M"
-                includeMargin={false}
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-2 break-all font-mono">
-              {LIFF_URL_SLOT_UNLOCK}
-            </p>
-            <p className="text-xs text-purple-600 mt-3">
-              ✓ URLパラメータ: action=slot-unlock, target=family
-            </p>
-            <p className="text-xs text-purple-700 mt-3 bg-purple-100 border border-purple-300 rounded px-2 py-1">
-              ✓ 来院トリガー: スキャンで家族全員がスロットゲーム解放（1日1回）
-            </p>
-          </div>
         </div>
       </div>
 
@@ -163,7 +134,7 @@ export default function TestQRPage() {
         <p className="text-sm text-slate-600 mb-4">
           LIFFアプリ内のカメラ機能で読み取るタイプ
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* 優良患者様用 */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-medium text-slate-800 mb-1">
@@ -254,33 +225,6 @@ export default function TestQRPage() {
           </p>
           <p className="text-xs text-amber-700 mt-4 bg-amber-100 border border-amber-300 rounded px-2 py-1">
             ⚠ 注意: 繰り返しスキャン可能。スタッフ立会いのもと使用
-          </p>
-        </div>
-
-        {/* スロットゲーム解放用（キッズ用） */}
-        <div className="rounded-xl border border-purple-200 bg-purple-50 p-6 shadow-sm">
-          <h2 className="text-base font-medium text-purple-800 mb-1">
-            スロットゲーム解放用
-          </h2>
-          <p className="text-xs text-purple-600 mb-4">
-            家族全員がスロットゲームをプレイ可能に
-          </p>
-          <div className="flex justify-center bg-white rounded-lg p-4">
-            <QRCodeSVG
-              value={PAYLOAD_SLOT_UNLOCK}
-              size={180}
-              level="M"
-              includeMargin={false}
-            />
-          </div>
-          <p className="text-xs text-slate-400 mt-2 font-mono" aria-label="ペイロード確認">
-            {PAYLOAD_SLOT_UNLOCK}
-          </p>
-          <p className="text-xs mt-2 text-purple-700" aria-label="ペイロード検証">
-            ✓ ペイロード: type=slot-unlock, target=family
-          </p>
-          <p className="text-xs text-purple-700 mt-4 bg-purple-100 border border-purple-300 rounded px-2 py-1">
-            ✓ 来院時1日1回スキャン可能。家族全員がキッズゲーム解放
           </p>
         </div>
       </div>
