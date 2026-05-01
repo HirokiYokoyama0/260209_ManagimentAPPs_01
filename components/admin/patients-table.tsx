@@ -50,7 +50,7 @@ export function PatientsTable() {
   const [createFamilyProfile, setCreateFamilyProfile] = useState<Profile | null>(null);
   const [stampEditProfile, setStampEditProfile] = useState<Profile | null>(null);
   const [resetProfile, setResetProfile] = useState<Profile | null>(null);
-  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode" | "family_category";
+  type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode" | "family_category" | "real_name" | "birth_month";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "updated_at",
     direction: "desc",
@@ -87,6 +87,10 @@ export function PatientsTable() {
             return (p.view_mode ?? "").toLowerCase();
           case "family_category":
             return getFamilyCategory(p);
+          case "real_name":
+            return (p.real_name ?? "").toLowerCase();
+          case "birth_month":
+            return p.birth_month ?? 0;
         }
       };
       const av = get(a);
@@ -251,7 +255,24 @@ export function PatientsTable() {
           <TableHeader>
             <TableRow className="bg-slate-50/80">
               <TableHead className="w-[120px]">LINE表示名</TableHead>
-              <TableHead className="w-[100px]">本名</TableHead>
+              <TableHead
+                onClick={() => handleSort("real_name")}
+                className="cursor-pointer select-none w-[100px]"
+              >
+                <span className="inline-flex items-center gap-1">
+                  本名
+                  {renderSortIndicator("real_name")}
+                </span>
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort("birth_month")}
+                className="cursor-pointer select-none w-[70px]"
+              >
+                <span className="inline-flex items-center gap-1">
+                  誕生月
+                  {renderSortIndicator("birth_month")}
+                </span>
+              </TableHead>
               <TableHead
                 onClick={() => handleSort("family_category")}
                 className="cursor-pointer select-none w-[140px]"
@@ -314,7 +335,7 @@ export function PatientsTable() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                   {profiles.length === 0 ? "患者データがありません。" : "該当する患者がいません。"}
                 </TableCell>
               </TableRow>
@@ -329,6 +350,9 @@ export function PatientsTable() {
                   </TableCell>
                   <TableCell className="font-medium text-slate-700 max-w-[100px] truncate" title={p.real_name || undefined}>
                     {p.real_name || "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-center text-sm">
+                    {p.birth_month ? `${p.birth_month}月` : "—"}
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
