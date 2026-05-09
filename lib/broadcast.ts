@@ -71,8 +71,8 @@ export function filterProfilesBySegment(
       if (name || ticketNumber || birthMonth) {
         let matchesAnyCondition = false;
 
-        // 氏名が未入力かチェック
-        if (name && !profile.display_name && !profile.real_name) {
+        // 氏名（本名）が未入力かチェック
+        if (name && !profile.real_name) {
           matchesAnyCondition = true;
         }
 
