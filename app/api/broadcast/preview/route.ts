@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!profiles) {
       return NextResponse.json({
         count: 0,
-        preview: [],
+        profiles: [],
         estimatedCost: 0,
       });
     }
@@ -37,15 +37,16 @@ export async function POST(request: NextRequest) {
     // セグメント条件でフィルタリング
     const filteredProfiles = filterProfilesBySegment(profiles as Profile[], segment);
 
-    // プレビュー（最初の10件）
-    const preview = filteredProfiles.slice(0, 10);
-
     // 推定メッセージ通数
     const estimatedCost = filteredProfiles.length;
 
+    // 全対象者を返す（上限500名まで）
+    const maxProfiles = 500;
+    const profilesToReturn = filteredProfiles.slice(0, maxProfiles);
+
     return NextResponse.json({
       count: filteredProfiles.length,
-      preview,
+      profiles: profilesToReturn,
       estimatedCost,
     });
   } catch (error) {

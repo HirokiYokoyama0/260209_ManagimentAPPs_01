@@ -20,6 +20,30 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+// 未設定ユーザー向け定型文
+const UNREGISTERED_USER_TEMPLATE = `いつも当院をご利用いただき、誠にありがとうございます。
+
+こちらのメッセージは、会員制アプリの初期設定が完了していない患者様にお送りしております。
+
+下記の流れに沿ってご登録のご協力をお願い致します。
+
+·····················································
+トーク画面内のメニュー
+↓
+デジタル会員証
+↓
+設定（画面右下）
+↓
+患者情報の編集マークより
+①お名前（漢字フルネーム）
+②診察券番号（診察券アプリ：私の歯医者さんに記載あり）
+③誕生月
+の3項目の入力をお願い致します。
+·······················································
+
+ご不明な点がございましたら医院までお問い合わせ頂けますと幸いです。
+今後とも、つくばホワイト歯科をよろしくお願い致します。`;
+
 export default function BroadcastPage() {
   return (
     <div className="container max-w-6xl py-8">
@@ -62,11 +86,14 @@ function NewBroadcastTab() {
   const [flexTemplates, setFlexTemplates] = useState<FlexTemplate[]>([]);
   const [preview, setPreview] = useState<{
     count: number;
-    preview: Profile[];
+    profiles: Profile[];
     estimatedCost: number;
   } | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const [showAllModal, setShowAllModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Flex Messageテンプレートを読み込み
   useEffect(() => {
@@ -84,6 +111,7 @@ function NewBroadcastTab() {
   // プレビュー取得
   const handlePreview = async () => {
     setIsLoadingPreview(true);
+    setExcludedIds(new Set()); // 除外IDsをリセット
     try {
       const res = await fetch("/api/broadcast/preview", {
         method: "POST",
@@ -98,6 +126,17 @@ function NewBroadcastTab() {
     } finally {
       setIsLoadingPreview(false);
     }
+  };
+
+  // 未設定ユーザー向け定型文の挿入
+  const handleInsertUnregisteredUserTemplate = () => {
+    if (message.trim().length > 0) {
+      const confirmed = confirm(
+        "現在の内容を定型文で置き換えます。よろしいですか？"
+      );
+      if (!confirmed) return;
+    }
+    setMessage(UNREGISTERED_USER_TEMPLATE);
   };
 
   // 送信実行
@@ -117,9 +156,17 @@ function NewBroadcastTab() {
       return;
     }
 
+    const actualCount = preview.count - excludedIds.size;
+
+    if (actualCount === 0) {
+      alert("送信対象者がいません（全員除外されています）");
+      return;
+    }
+
     const messageTypeLabel = messageType === "text" ? "テキストメッセージ" : "カードタイプメッセージ";
+    const excludedMessage = excludedIds.size > 0 ? `\n除外: ${excludedIds.size}名` : "";
     const confirmed = confirm(
-      `${preview.count}名に${messageTypeLabel}を送信します。よろしいですか？\n\n推定メッセージ通数: ${preview.estimatedCost}通`
+      `${actualCount}名に${messageTypeLabel}を送信します。よろしいですか？\n\n推定メッセージ通数: ${actualCount}通${excludedMessage}`
     );
 
     if (!confirmed) return;
@@ -135,6 +182,7 @@ function NewBroadcastTab() {
           messageType,
           flexTemplateId: messageType === "flex" ? selectedTemplate : undefined,
           sentBy: "admin",
+          excludedIds: Array.from(excludedIds),
         }),
       });
 
@@ -148,6 +196,7 @@ function NewBroadcastTab() {
         setMessage("");
         setSegment({});
         setPreview(null);
+        setExcludedIds(new Set());
       } else {
         alert(`送信に失敗しました: ${data.error}`);
       }
@@ -297,6 +346,66 @@ function NewBroadcastTab() {
           )}
         </div>
 
+        {/* 未入力項目フィルター */}
+        <div className="space-y-2 pt-4 border-t">
+          <Label className="text-base font-semibold">未入力項目で絞り込み</Label>
+          <p className="text-sm text-gray-600">
+            ※ 複数選択した場合、いずれか1つでも該当すれば抽出されます（OR条件）
+          </p>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={segment.missingFields?.name || false}
+                onChange={(e) =>
+                  setSegment({
+                    ...segment,
+                    missingFields: {
+                      ...segment.missingFields,
+                      name: e.target.checked,
+                    },
+                  })
+                }
+              />
+              氏名が未入力の人
+            </Label>
+
+            <Label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={segment.missingFields?.ticketNumber || false}
+                onChange={(e) =>
+                  setSegment({
+                    ...segment,
+                    missingFields: {
+                      ...segment.missingFields,
+                      ticketNumber: e.target.checked,
+                    },
+                  })
+                }
+              />
+              診察券番号が未入力の人
+            </Label>
+
+            <Label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={segment.missingFields?.birthMonth || false}
+                onChange={(e) =>
+                  setSegment({
+                    ...segment,
+                    missingFields: {
+                      ...segment.missingFields,
+                      birthMonth: e.target.checked,
+                    },
+                  })
+                }
+              />
+              誕生月が未入力の人
+            </Label>
+          </div>
+        </div>
+
         <Button onClick={handlePreview} disabled={isLoadingPreview}>
           {isLoadingPreview ? (
             <>
@@ -314,26 +423,31 @@ function NewBroadcastTab() {
 
       {/* プレビュー */}
       {preview && (
-        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-          <h3 className="text-lg font-semibold mb-2">対象者プレビュー</h3>
-          <p className="text-2xl font-bold text-blue-600 mb-2">
-            {preview.count}名
-          </p>
-          <p className="text-sm text-gray-600 mb-4">
-            推定メッセージ通数: {preview.estimatedCost}通
-          </p>
+        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">対象者プレビュー</h3>
+            <p className="text-2xl font-bold text-blue-600 mb-1">
+              {preview.count - excludedIds.size}名
+            </p>
+            {excludedIds.size > 0 && (
+              <p className="text-sm text-gray-600">
+                （除外: {excludedIds.size}名）
+              </p>
+            )}
+            <p className="text-sm text-gray-600 mt-2">
+              推定メッセージ通数: {preview.count - excludedIds.size}通
+            </p>
+          </div>
 
-          {preview.preview.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">最初の10名:</p>
-              {preview.preview.map((p, i) => (
-                <div key={p.id} className="text-sm text-gray-700">
-                  {i + 1}. {p.display_name || "名前未設定"} (スタンプ:{" "}
-                  {p.stamp_count}個)
-                </div>
-              ))}
+          {preview.count > 500 && (
+            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800">
+              ⚠️ 対象者が500名を超えています。個別除外機能を使う場合は、セグメント条件でさらに絞り込むことを推奨します。
             </div>
           )}
+
+          <Button onClick={() => setShowAllModal(true)} variant="outline" className="w-full">
+            全員を表示・編集
+          </Button>
         </div>
       )}
 
@@ -440,7 +554,7 @@ function NewBroadcastTab() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             size="sm"
             variant="outline"
@@ -462,6 +576,16 @@ function NewBroadcastTab() {
           >
             {"{ticket_number}"}を挿入
           </Button>
+
+          {/* 未設定ユーザー向け定型文 */}
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleInsertUnregisteredUserTemplate}
+            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200"
+          >
+            📝 未設定ユーザー用配信文章
+          </Button>
         </div>
       </div>
       )}
@@ -482,11 +606,122 @@ function NewBroadcastTab() {
           ) : (
             <>
               <Send className="mr-2 h-4 w-4" />
-              {preview ? `${preview.count}名に送信` : "送信"}
+              {preview ? `${preview.count - excludedIds.size}名に送信` : "送信"}
             </>
           )}
         </Button>
       </div>
+
+      {/* 全員表示・除外機能モーダル */}
+      {preview && (
+        <Dialog open={showAllModal} onOpenChange={setShowAllModal}>
+          <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>
+                対象者一覧 ({preview.profiles.length}名)
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* 検索 */}
+            <Input
+              placeholder="氏名または診察券番号で検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mb-2"
+            />
+
+            {/* 一括操作 */}
+            <div className="flex gap-2 mb-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setExcludedIds(new Set())}
+              >
+                全員選択
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const allIds = new Set(preview.profiles.map(p => p.id));
+                  setExcludedIds(allIds);
+                }}
+              >
+                全員解除
+              </Button>
+            </div>
+
+            {/* 対象者リスト */}
+            <div className="overflow-y-auto flex-1 space-y-2 border rounded p-2">
+              {preview.profiles
+                .filter((p) => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  const name = (p.display_name || p.real_name || "").toLowerCase();
+                  const ticket = (p.ticket_number || "").toLowerCase();
+                  return name.includes(query) || ticket.includes(query);
+                })
+                .map((p) => {
+                  const isExcluded = excludedIds.has(p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      className={`p-3 border rounded ${
+                        isExcluded ? "bg-gray-100 opacity-60" : "bg-white"
+                      }`}
+                    >
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!isExcluded}
+                          onChange={(e) => {
+                            const newExcluded = new Set(excludedIds);
+                            if (e.target.checked) {
+                              newExcluded.delete(p.id);
+                            } else {
+                              newExcluded.add(p.id);
+                            }
+                            setExcludedIds(newExcluded);
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {p.display_name || p.real_name || "名前未設定"}
+                            {isExcluded && (
+                              <Badge variant="secondary" className="ml-2">
+                                除外済み
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            診察券: {p.ticket_number || "なし"} / スタンプ:{" "}
+                            {p.stamp_count}個 / 最終来院:{" "}
+                            {p.last_visit_date || "未設定"}
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* フッター */}
+            <div className="flex justify-between items-center pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                除外: {excludedIds.size}名 / 送信対象:{" "}
+                {preview.profiles.length - excludedIds.size}名
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowAllModal(false)}>
+                  キャンセル
+                </Button>
+                <Button onClick={() => setShowAllModal(false)}>選択を確定</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

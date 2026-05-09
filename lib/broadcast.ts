@@ -63,6 +63,34 @@ export function filterProfilesBySegment(
       if (!segment.birthMonths.includes(profile.birth_month)) return false;
     }
 
+    // 未入力項目によるフィルタ（OR条件）
+    if (segment.missingFields) {
+      const { name, ticketNumber, birthMonth } = segment.missingFields;
+
+      // チェックが1つも入っていない場合はスキップ
+      if (name || ticketNumber || birthMonth) {
+        let matchesAnyCondition = false;
+
+        // 氏名が未入力かチェック
+        if (name && !profile.display_name && !profile.real_name) {
+          matchesAnyCondition = true;
+        }
+
+        // 診察券番号が未入力かチェック
+        if (ticketNumber && !profile.ticket_number) {
+          matchesAnyCondition = true;
+        }
+
+        // 誕生月が未入力かチェック
+        if (birthMonth && profile.birth_month == null) {
+          matchesAnyCondition = true;
+        }
+
+        // いずれの条件にも該当しない場合は除外
+        if (!matchesAnyCondition) return false;
+      }
+    }
+
     return true;
   });
 }

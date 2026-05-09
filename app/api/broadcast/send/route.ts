@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       messageType?: "text" | "flex";
       flexTemplateId?: string;
     } = await request.json();
-    const { segment, message, sentBy, messageType = "text", flexTemplateId } = body;
+    const { segment, message, sentBy, messageType = "text", flexTemplateId, excludedIds = [] } = body;
 
     const supabase = createSupabaseAdminClient();
 
@@ -32,7 +32,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. セグメント条件でフィルタリング
-    const targetProfiles = filterProfilesBySegment(profiles as Profile[], segment);
+    let targetProfiles = filterProfilesBySegment(profiles as Profile[], segment);
+
+    // 3. 除外IDsを適用
+    if (excludedIds.length > 0) {
+      targetProfiles = targetProfiles.filter((p) => !excludedIds.includes(p.id));
+    }
 
     if (targetProfiles.length === 0) {
       return NextResponse.json({
@@ -44,7 +49,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. LINE IDを抽出（友だち登録済みのみ）
+    // 4. LINE IDを抽出（友だち登録済みのみ）
     const lineIds = targetProfiles
       .filter((p) => p.line_user_id && p.is_line_friend === true)
       .map((p) => p.line_user_id);
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
     let successCount = 0;
     let failedCount = 0;
 
-    // 4. LINE Messaging API で送信（個別に変数置換）
+    // 5. LINE Messaging API で送信（個別に変数置換）
     if (lineIds.length > 0) {
       try {
         if (messageType === "flex" && flexTemplateId) {
@@ -70,7 +75,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. 配信ログを保存
+    // 6. 配信ログを保存
     const { data: log, error: logError } = await supabase
       .from("broadcast_logs")
       .insert({

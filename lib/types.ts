@@ -89,14 +89,23 @@ export type BroadcastSegment = {
   isLineFriend?: boolean;
   /** 誕生月（1-12、複数選択可能） */
   birthMonths?: number[];
+  /** 未入力項目フィルター（OR条件） */
+  missingFields?: {
+    /** 氏名が未入力の人を抽出 */
+    name?: boolean;
+    /** 診察券番号が未入力の人を抽出 */
+    ticketNumber?: boolean;
+    /** 誕生月が未入力の人を抽出 */
+    birthMonth?: boolean;
+  };
 };
 
 /** 配信プレビューのレスポンス */
 export type BroadcastPreview = {
   /** 対象者数 */
   count: number;
-  /** プレビュー（最初の10件程度） */
-  preview: Profile[];
+  /** 全対象者（個別除外機能で使用） */
+  profiles: Profile[];
   /** 推定メッセージ通数 */
   estimatedCost: number;
 };
@@ -111,6 +120,8 @@ export type BroadcastSendRequest = {
   sentBy: string;
   /** テストモード（管理者にのみ送信） */
   testMode?: boolean;
+  /** 除外する対象者のID一覧 */
+  excludedIds?: string[];
 };
 
 /** 配信実行のレスポンス */
