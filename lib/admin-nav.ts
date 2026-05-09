@@ -38,6 +38,7 @@ export const toolNav: NavItem[] = [
 export const logNav: NavItem[] = [
   { label: "スタッフ操作ログ", href: "/admin/activity-logs" },
   { label: "ユーザログ", href: "/admin/user-logs" },
+  { label: "個別配信ログ", href: "/admin/care-messages" },
 ];
 
 /** アカウント系（パスワード変更はリンク、ログアウトは form で別扱い） */
@@ -47,7 +48,9 @@ export const accountNav: NavItem[] = [
 
 /** パスがログ系か */
 export function isLogPath(pathname: string): boolean {
-  return pathname.startsWith("/admin/activity-logs") || pathname.startsWith("/admin/user-logs");
+  return pathname.startsWith("/admin/activity-logs")
+      || pathname.startsWith("/admin/user-logs")
+      || pathname.startsWith("/admin/care-messages");
 }
 
 /** 指定 href が現在パスでアクティブか（メイン・ツール用） */

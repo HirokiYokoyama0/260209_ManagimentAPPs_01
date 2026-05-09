@@ -188,3 +188,22 @@ export type RewardExchangeWithDetails = RewardExchange & {
   reward_name: string;
   reward_image_url: string | null;
 };
+
+// ============================================
+// 個別配信ログ（care_messages）の型定義
+// ============================================
+
+/** 個別配信メッセージ */
+export type CareMessage = {
+  id: string;
+  profile_id: string;
+  body: string;
+  sent_at: string;
+  created_at: string;
+  /** 患者名（display_name または real_name） */
+  patient_name: string;
+  /** 診察券番号 */
+  ticket_number: string | null;
+  /** プロフィール画像URL */
+  picture_url: string | null;
+};
