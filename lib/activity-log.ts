@@ -12,6 +12,8 @@ export type LogAction =
   | "login"
   | "logout"
   | "profile_update"
+  | "profile_delete_initiated"
+  | "profile_deleted"
   | "stamp_increment"
   | "stamp_set"
   | "message_send"

@@ -5,9 +5,9 @@
 このドキュメントでは、Supabase（PostgreSQL）のデータベース構造を全体的にまとめています。
 
 **作成日:** 2026-02-16
-**最終更新:** 2026-04-04
+**最終更新:** 2026-05-15
 **データベース:** Supabase PostgreSQL
-**バージョン:** 1.8 (RLSセキュリティ強化・本番環境適用済み)
+**バージョン:** 1.9 (患者削除機能対応・追加テーブル反映)
 
 ---
 
@@ -26,6 +26,11 @@
 | [event_logs](#8-event_logs-テーブル) | ユーザー行動ログ（分析用） | 015_create_event_logs_table_ForUser.sql |
 | [staff](#9-staff-テーブル) | スタッフアカウント | 013_create_staff_table.sql |
 | [patient_dental_records](#10-patient_dental_records-テーブル) | 歯科ケア記録（Phase 3） | 019_create_dental_records_table.sql |
+| [care_messages](#11-care_messages-テーブル) | 個別配信メッセージログ | 002_create_care_messages_table.sql |
+| [surveys](#12-surveys-テーブル) | アンケート定義マスター | 017_create_survey_tables.sql |
+| [survey_answers](#13-survey_answers-テーブル) | アンケート回答データ | 017_create_survey_tables.sql |
+| [survey_targets](#14-survey_targets-テーブル) | アンケート配信対象者管理 | 017_create_survey_tables.sql |
+| [broadcast_logs](#15-broadcast_logs-テーブル) | 一斉配信履歴ログ | 004_create_broadcast_logs_table.sql |
 
 **ビュー:**
 | ビュー名 | 説明 | マイグレーションファイル |
@@ -1230,6 +1235,370 @@ CREATE POLICY "allow_public_read" ON profiles FOR SELECT USING (true);
 
 ---
 
+## 11. care_messages テーブル
+
+**説明:** 個別配信メッセージの履歴を記録
+
+**作成:** `002_create_care_messages_table.sql`
+
+| カラム名 | 型 | NULL許可 | デフォルト | 説明 |
+|---------|---|---------|----------|------|
+| `id` | UUID | NO | gen_random_uuid() | **主キー**: メッセージの一意識別子 |
+| `profile_id` | TEXT | NO | - | **外部キー**: profiles.id へのリンク |
+| `body` | TEXT | NO | - | 送信したメッセージ本文 |
+| `sent_at` | TIMESTAMPTZ | NO | NOW() | 送信日時 |
+| `created_at` | TIMESTAMPTZ | NO | NOW() | レコード作成日時 |
+
+**インデックス:**
+- `idx_care_messages_profile_id` - 患者IDでの検索用
+- `idx_care_messages_sent_at` - 送信日時降順での検索用
+
+**制約:**
+- PRIMARY KEY: `id`
+- FOREIGN KEY: `profile_id` → `profiles(id)` ON DELETE CASCADE
+
+**RLS (Row Level Security):**
+- ✅ 有効
+- ポリシー:
+  - `care_messages_select` - 全員が読み取り可能
+  - `care_messages_insert` - 全員が挿入可能
+
+**設計ポイント:**
+- 管理画面から個別配信したメッセージの履歴を保存
+- 患者削除時にCASCADE DELETEで自動削除される
+- 送信者情報は現状記録していない（将来拡張可能）
+
+---
+
+## 12. surveys テーブル
+
+**説明:** アンケート定義マスター
+
+**作成:** `017_create_survey_tables.sql`
+
+| カラム名 | 型 | NULL許可 | デフォルト | 説明 |
+|---------|---|---------|----------|------|
+| `id` | TEXT | NO | - | **主キー**: アンケート識別子（例: 'satisfaction_2026Q1'） |
+| `title` | TEXT | NO | - | アンケートタイトル |
+| `description` | TEXT | YES | - | 説明文 |
+| `reward_stamps` | INTEGER | NO | 3 | 報酬スタンプ数（個） |
+| `is_active` | BOOLEAN | NO | true | 公開中フラグ |
+| `start_date` | TIMESTAMPTZ | YES | - | 公開開始日 |
+| `end_date` | TIMESTAMPTZ | YES | - | 公開終了日 |
+| `created_by` | TEXT | YES | - | 作成者（スタッフID等） |
+| `created_at` | TIMESTAMPTZ | NO | NOW() | レコード作成日時 |
+| `updated_at` | TIMESTAMPTZ | NO | NOW() | レコード更新日時 |
+
+**インデックス:**
+- `idx_surveys_is_active` - 公開中アンケート検索用（部分インデックス）
+
+**制約:**
+- PRIMARY KEY: `id`
+
+**RLS (Row Level Security):**
+- ✅ 有効
+- ポリシー:
+  - `anon_can_read_surveys` - anonキーで全件参照可能
+
+**設計ポイント:**
+- Phase 1は固定質問形式（Q1: 5段階評価, Q2: 自由記述, Q3: NPS推奨度）
+- profiles テーブルへの外部キー参照なし（マスターテーブル）
+
+---
+
+## 13. survey_answers テーブル
+
+**説明:** アンケート回答データ
+
+**作成:** `017_create_survey_tables.sql`
+
+| カラム名 | 型 | NULL許可 | デフォルト | 説明 |
+|---------|---|---------|----------|------|
+| `id` | UUID | NO | gen_random_uuid() | **主キー**: 回答の一意識別子 |
+| `user_id` | TEXT | NO | - | **外部キー**: profiles.id へのリンク |
+| `survey_id` | TEXT | NO | - | **外部キー**: surveys.id へのリンク |
+| `q1_rating` | INTEGER | YES | - | Q1: 満足度評価（1〜5） |
+| `q2_comment` | TEXT | YES | - | Q2: 自由記述（任意） |
+| `q3_recommend` | INTEGER | YES | - | Q3: NPS推奨度（0〜10） |
+| `created_at` | TIMESTAMPTZ | NO | NOW() | レコード作成日時 |
+
+**インデックス:**
+- `idx_survey_answers_survey_id` - アンケートIDでの検索用
+- `idx_survey_answers_user_id` - ユーザーIDでの検索用
+- `idx_survey_answers_created_at` - 回答日時での検索用
+
+**制約:**
+- PRIMARY KEY: `id`
+- FOREIGN KEY: `user_id` → `profiles(id)` ON DELETE CASCADE
+- FOREIGN KEY: `survey_id` → `surveys(id)` ON DELETE CASCADE
+- UNIQUE: `(user_id, survey_id)` - 同一アンケートへの重複回答防止
+
+**RLS (Row Level Security):**
+- ✅ 有効
+- ポリシー:
+  - `anon_can_read_survey_answers` - anonキーで全件参照可能
+  - `anon_can_insert_survey_answers` - anonキーで挿入可能
+
+**設計ポイント:**
+- 患者削除時にCASCADE DELETEで自動削除される
+- 同じユーザーが同じアンケートに複数回答することを防止
+
+---
+
+## 14. survey_targets テーブル
+
+**説明:** アンケート配信対象者管理
+
+**作成:** `017_create_survey_tables.sql`
+
+| カラム名 | 型 | NULL許可 | デフォルト | 説明 |
+|---------|---|---------|----------|------|
+| `id` | UUID | NO | gen_random_uuid() | **主キー**: ターゲットレコードの一意識別子 |
+| `user_id` | TEXT | NO | - | **外部キー**: profiles.id へのリンク |
+| `survey_id` | TEXT | NO | - | **外部キー**: surveys.id へのリンク |
+| `show_on_liff_open` | BOOLEAN | NO | false | LIFFアプリ起動時にモーダル表示するか |
+| `shown_count` | INTEGER | NO | 0 | モーダル表示回数（統計用） |
+| `last_shown_at` | TIMESTAMPTZ | YES | - | 最終表示日時 |
+| `postponed_count` | INTEGER | NO | 0 | 「あとで」を押した回数 |
+| `last_postponed_at` | TIMESTAMPTZ | YES | - | 最後に「あとで」を押した日時 |
+| `answered_at` | TIMESTAMPTZ | YES | - | 回答完了日時（NULLなら未回答） |
+| `created_at` | TIMESTAMPTZ | NO | NOW() | レコード作成日時 |
+| `updated_at` | TIMESTAMPTZ | NO | NOW() | レコード更新日時 |
+
+**インデックス:**
+- `idx_survey_targets_user_id` - ユーザーIDでの検索用
+- `idx_survey_targets_survey_id` - アンケートIDでの検索用
+- `idx_survey_targets_show_on_liff` - モーダル表示フラグでの検索用（部分インデックス）
+- `idx_survey_targets_answered` - 回答状況での検索用
+
+**制約:**
+- PRIMARY KEY: `id`
+- FOREIGN KEY: `user_id` → `profiles(id)` ON DELETE CASCADE
+- FOREIGN KEY: `survey_id` → `surveys(id)` ON DELETE CASCADE
+- UNIQUE: `(user_id, survey_id)` - 同一アンケートへの重複ターゲット防止
+
+**RLS (Row Level Security):**
+- ✅ 有効
+- ポリシー:
+  - `anon_can_read_survey_targets` - anonキーで全件参照可能
+  - `anon_can_update_survey_targets` - anonキーで更新可能
+  - `anon_can_insert_survey_targets` - anonキーで挿入可能
+
+**関連RPC関数:**
+- `increment_survey_postponed(p_user_id TEXT, p_survey_id TEXT)` - 「あとで」ボタン押下時のカウンタ更新
+
+**設計ポイント:**
+- 患者削除時にCASCADE DELETEで自動削除される
+- モーダル表示制御とユーザー行動トラッキングの両方を担当
+
+---
+
+## 15. broadcast_logs テーブル
+
+**説明:** 一斉配信履歴ログ
+
+**作成:** `004_create_broadcast_logs_table.sql`
+
+| カラム名 | 型 | NULL許可 | デフォルト | 説明 |
+|---------|---|---------|----------|------|
+| `id` | UUID | NO | gen_random_uuid() | **主キー**: ログの一意識別子 |
+| `sent_by` | TEXT | NO | - | 送信者（管理者名またはID） |
+| `segment_conditions` | JSONB | NO | - | セグメント条件（JSON形式） |
+| `message_text` | TEXT | NO | - | 送信メッセージ内容 |
+| `target_count` | INTEGER | NO | - | 対象者数 |
+| `success_count` | INTEGER | YES | 0 | 送信成功数 |
+| `failed_count` | INTEGER | YES | 0 | 送信失敗数 |
+| `sent_at` | TIMESTAMPTZ | NO | NOW() | 送信実行日時 |
+| `created_at` | TIMESTAMPTZ | NO | NOW() | レコード作成日時 |
+
+**インデックス:**
+- `idx_broadcast_logs_sent_at` - 送信日時降順での検索用
+- `idx_broadcast_logs_sent_by` - 送信者での検索用
+
+**制約:**
+- PRIMARY KEY: `id`
+- profiles テーブルへの外部キー参照なし（ログのみ）
+
+**RLS (Row Level Security):**
+- ✅ 有効
+- ポリシー:
+  - `allow_public_read` - 全員が読み取り可能
+  - `allow_public_insert` - 全員が挿入可能
+
+**設計ポイント:**
+- 一斉配信の履歴を記録する監査ログ
+- profiles への外部キー参照なし（患者削除後も履歴を保持）
+- セグメント条件をJSONB形式で柔軟に保存
+
+---
+
+## 🗑️ 患者削除時の完全な影響範囲
+
+患者（profiles）を削除した場合、以下のテーブルに影響があります。
+
+### CASCADE DELETE（自動削除）
+
+| テーブル名 | 外部キー | 動作 | 影響内容 |
+|-----------|---------|------|----------|
+| `stamp_history` | `user_id` | CASCADE | スタンプ履歴が全て削除される |
+| `reward_exchanges` | `user_id` | CASCADE | 特典交換履歴が全て削除される |
+| `milestone_history` | `user_id` | CASCADE | マイルストーン到達履歴が全て削除される |
+| `patient_dental_records` | `patient_id` | CASCADE | 歯科ケア記録が全て削除される |
+| `care_messages` | `profile_id` | CASCADE | 個別配信メッセージログが全て削除される |
+| `survey_answers` | `user_id` | CASCADE | アンケート回答データが全て削除される |
+| `survey_targets` | `user_id` | CASCADE | アンケート配信対象者情報が全て削除される |
+
+### SET NULL（外部キー参照をNULLに設定）
+
+| テーブル名 | 外部キー | 動作 | 影響内容 |
+|-----------|---------|------|----------|
+| `families` | `representative_user_id` | SET NULL | 代表者が削除された場合、家族は残るが代表者IDがNULLになる |
+| `profiles` | `family_id` | SET NULL | 家族削除時、メンバーは残るがfamily_idがNULLになる（逆参照） |
+
+### 外部キー参照なし（履歴保持）
+
+| テーブル名 | 動作 | 理由 |
+|-----------|------|------|
+| `event_logs` | 保持 | ユーザー行動ログは監査・分析用に保持 |
+| `activity_logs` | 保持 | スタッフ操作ログは監査用に保持 |
+| `broadcast_logs` | 保持 | 一斉配信履歴は監査用に保持 |
+
+---
+
+## 👨‍👩‍👧 スマホなし子供削除と家族解散の関係
+
+スマホを持たない子供（`family_role === 'child' && line_user_id === null`）を削除する際の家族への影響パターン：
+
+### パターン1: 家族を先に解散してから削除
+
+```sql
+-- 1. 家族を解散（全メンバーの family_id が NULL になる）
+DELETE FROM families WHERE id = '<family_id>';
+
+-- 2. スマホなし子供を削除
+DELETE FROM profiles WHERE id = '<child_profile_id>';
+```
+
+**メリット:**
+- シンプルな実装
+- 家族全体の管理が不要になる
+
+**デメリット:**
+- 家族の他のメンバー（親・兄弟）も単身に戻ってしまう
+- 家族機能を使い続けたい場合は不適切
+
+---
+
+### パターン2: 子供のみ削除、家族は維持（推奨）
+
+```sql
+-- スマホなし子供のみ削除（family_idは自動的にNULLになる）
+DELETE FROM profiles WHERE id = '<child_profile_id>';
+
+-- 家族は削除しない（他のメンバーが2人以上残っている場合）
+```
+
+**メリット:**
+- 家族の他のメンバーに影響を与えない
+- 家族機能をそのまま使い続けられる
+- 最も柔軟で影響範囲が小さい
+
+**デメリット:**
+- メンバーが1人だけ残った場合、単身なのに家族IDを持つ状態になる
+
+---
+
+### パターン3: 自動最適化（推奨・実装時検討）
+
+```typescript
+// 削除前にメンバー数をチェック
+const { count } = await supabase
+  .from('profiles')
+  .select('id', { count: 'exact', head: true })
+  .eq('family_id', familyId);
+
+// 子供を削除
+await supabase.from('profiles').delete().eq('id', childProfileId);
+
+// メンバーが1人以下になった場合は家族も解散
+if (count <= 1) {
+  await supabase.from('families').delete().eq('id', familyId);
+}
+```
+
+**メリット:**
+- 自動的に最適な状態を維持
+- 単身なのに家族に所属する矛盾を解消
+- ユーザー体験が自然
+
+**デメリット:**
+- 実装がやや複雑
+- 削除APIに追加ロジックが必要
+
+---
+
+### 推奨実装
+
+**基本方針:**
+- **パターン2**を基本とし、必要に応じて**パターン3**の自動最適化を追加
+- 家族の他のメンバーに影響を与えないことを最優先
+- 削除前に家族構成を確認し、適切な処理を選択
+
+**実装例:**
+```typescript
+// app/api/profiles/[id]/route.ts に DELETE エンドポイントを追加
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = createSupabaseAdminClient();
+
+  // 削除対象のプロフィール取得
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('family_id')
+    .eq('id', id)
+    .single();
+
+  // 家族に所属している場合、メンバー数をチェック
+  if (profile?.family_id) {
+    const { count } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('family_id', profile.family_id);
+
+    // プロフィール削除
+    const { error: deleteError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
+
+    // メンバーが1人以下になった場合は家族も解散
+    if (count <= 1) {
+      await supabase
+        .from('families')
+        .delete()
+        .eq('id', profile.family_id);
+    }
+  } else {
+    // 家族に所属していない場合はそのまま削除
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  return NextResponse.json({ success: true });
+}
+```
+
+---
+
 ## 改訂履歴
 
 | 日付 | バージョン | 内容 |
@@ -1243,8 +1612,9 @@ CREATE POLICY "allow_public_read" ON profiles FOR SELECT USING (true);
 | 2026-03-15 | 1.6 | **stamp_history RLS更新（実測確認に基づく）**：016マイグレーションの DELETE/UPDATE ポリシーとDELETEトリガーを追記、update_profile_on_stamp_delete() 関数追加、マイグレーション順序更新 |
 | 2026-03-27 | 1.7 | **マイルストーン型特典システム実装**：milestone_rewards テーブル追加（3種類の特典）、milestone_history テーブル追加、reward_exchanges テーブルに4つの新カラム追加（milestone_reached, is_milestone_based, valid_until, is_first_time）、外部キー制約削除、021/022マイグレーション追加 |
 | 2026-04-04 | 1.8 | **RLSセキュリティ強化・本番環境適用**：22個の新RLSポリシー実装（フォーマット検証型）、セキュリティレベル⭐→⭐⭐⭐へ向上、管理ダッシュボードへの影響なし、026B_minimal_rls_hardening_fixed.sqlマイグレーション実行済み、全テーブル（profiles, stamp_history, reward_exchanges, families, patient_dental_records, milestone_history, event_logs）にformat_checkポリシー適用 |
+| 2026-05-15 | 1.9 | **患者削除機能対応・追加テーブル反映**：care_messages, surveys, survey_answers, survey_targets, broadcast_logs テーブルの詳細スキーマ追加（11〜15章）、患者削除時の完全な影響範囲を文書化（CASCADE DELETE 7テーブル、SET NULL 2テーブル、履歴保持 3テーブル）、スマホなし子供削除と家族解散の関係を3パターン解説（パターン2推奨）、実装例コード追加 |
 
 ---
 
 **作成者:** Claude Code
-**最終更新日:** 2026-04-04
+**最終更新日:** 2026-05-15

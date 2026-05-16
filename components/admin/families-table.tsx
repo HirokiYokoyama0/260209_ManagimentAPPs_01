@@ -396,14 +396,17 @@ function FamilyRow({
                           <span className="text-muted-foreground">
                             来院: <strong>{member.visit_count || 0}回</strong>
                           </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-rose-600 hover:text-rose-700"
-                            onClick={() => setRemoveMember(member)}
-                          >
-                            削除
-                          </Button>
+                          {/* 子供のみ除外ボタンを表示（保護者は表示しない） */}
+                          {member.family_role === "child" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-rose-600 hover:text-rose-700"
+                              onClick={() => setRemoveMember(member)}
+                            >
+                              除外
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

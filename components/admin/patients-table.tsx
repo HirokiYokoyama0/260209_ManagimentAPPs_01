@@ -29,7 +29,8 @@ import { MessageSendSheet } from "./message-send-sheet";
 import { MobilePatientList } from "./mobile/mobile-patient-list";
 import { CreateFamilyDialog } from "./create-family-dialog";
 import { ResetToIndividualDialog } from "./reset-to-individual-dialog";
-import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users, MoreHorizontal, UserX } from "lucide-react";
+import { DeleteProfileDialog } from "./delete-profile-dialog";
+import { Minus, Plus, Hash, MessageCircle, Pencil, Loader2, AlertCircle, Users, MoreHorizontal, UserX, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -50,6 +51,7 @@ export function PatientsTable() {
   const [createFamilyProfile, setCreateFamilyProfile] = useState<Profile | null>(null);
   const [stampEditProfile, setStampEditProfile] = useState<Profile | null>(null);
   const [resetProfile, setResetProfile] = useState<Profile | null>(null);
+  const [deleteProfile, setDeleteProfile] = useState<Profile | null>(null);
   type SortKey = "ticket_number" | "stamp_count" | "last_visit_date" | "updated_at" | "is_line_friend" | "view_mode" | "family_category" | "real_name" | "birth_month";
   const [sort, setSort] = useState<{ key: SortKey; direction: "asc" | "desc" }>({
     key: "updated_at",
@@ -470,6 +472,13 @@ export function PatientsTable() {
                             <UserX className="h-4 w-4 mr-2" />
                             単身ユーザーにリセット
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteProfile(p)}
+                            className="cursor-pointer text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            患者情報を削除
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -528,6 +537,23 @@ export function PatientsTable() {
           open={!!resetProfile}
           onOpenChange={(open) => !open && setResetProfile(null)}
           onSuccess={() => mutate()}
+        />
+      )}
+
+      {deleteProfile && (
+        <DeleteProfileDialog
+          profile={deleteProfile}
+          onDelete={async (id) => {
+            const res = await fetch(`/api/profiles/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+              const error = await res.json();
+              throw new Error(error.error || "削除に失敗しました");
+            }
+            mutate();
+            setDeleteProfile(null);
+          }}
+          open={!!deleteProfile}
+          onOpenChange={(open) => !open && setDeleteProfile(null)}
         />
       )}
     </div>
