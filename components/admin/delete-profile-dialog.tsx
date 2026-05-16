@@ -16,7 +16,7 @@ import { Trash2, AlertTriangle } from "lucide-react";
 interface DeleteProfileDialogProps {
   profile: {
     id: string;
-    display_name: string;
+    display_name: string | null;
     real_name?: string | null;
     ticket_number?: string | null;
     stamp_count: number;
@@ -40,7 +40,7 @@ export function DeleteProfileDialog({
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
 
-  const displayName = profile.real_name || profile.display_name;
+  const displayName = profile.real_name || profile.display_name || "名前未設定";
 
   const handleDelete = async () => {
     setLoading(true);
