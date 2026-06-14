@@ -115,7 +115,8 @@ function formatMetadata(meta: Record<string, unknown> | null): string {
   // カメラQR計装（auto_stamp_entry / auto_stamp_result）
   if (meta.outcome !== undefined) parts.push(`結果: ${meta.outcome}`);
   // カメラQRは2段階で着地する。第1段階(liff.state着地)は redirected=false が正常
-  if (meta.from_liff_state === true) parts.push("着地1段階");
+  if (meta.from_liff_state === true) parts.push("第1段階(着地)");
+  else if (meta.from_liff_state === false) parts.push("第2段階(展開)");
   if (meta.redirected !== undefined) parts.push(`転送: ${meta.redirected ? "あり" : "なし"}`);
   // 第1段階はliff.state(デコード済)の方が読める。それ以外はraw_query
   const qStr = meta.from_liff_state && meta.liff_state ? meta.liff_state : meta.raw_query;
