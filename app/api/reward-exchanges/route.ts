@@ -10,9 +10,42 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status"); // pending, completed, cancelled
-    const search = searchParams.get("search"); // 患者名、診察券番号、または特典名で検索
+    const search = searchParams.get("search")?.trim() || null; // 患者名、診察券番号、または特典名で検索
 
     const supabase = createSupabaseAdminClient();
+
+    // 検索語がある場合、先に一致する user_id / reward_id を解決してDB側で絞り込む。
+    // （旧実装は limit(50) の後にJS側で検索していたため、直近50件に入らない患者は
+    //   診察券で検索してもヒットしなかった。検索を limit の前＝DBクエリ側に移す。）
+    let matchedUserIds: string[] | null = null;
+    let matchedRewardIds: string[] | null = null;
+    if (search) {
+      // PostgREST の or/in フィルタ構文を壊す文字を除去（診察券番号・氏名には不要）
+      const safe = search.replace(/[,()%*\\"']/g, "");
+      if (safe) {
+        const { data: matchedProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .or(
+            `display_name.ilike.%${safe}%,real_name.ilike.%${safe}%,ticket_number.ilike.%${safe}%`
+          );
+        matchedUserIds = (matchedProfiles || []).map((p) => p.id);
+
+        const { data: matchedRewards } = await supabase
+          .from("milestone_rewards")
+          .select("id")
+          .ilike("name", `%${safe}%`);
+        matchedRewardIds = (matchedRewards || []).map((r) => r.id);
+      } else {
+        matchedUserIds = [];
+        matchedRewardIds = [];
+      }
+
+      // 一致する患者・特典が無ければ即空返し（無駄なクエリを避ける）
+      if (matchedUserIds.length === 0 && matchedRewardIds.length === 0) {
+        return NextResponse.json({ exchanges: [] });
+      }
+    }
 
     // マイルストーン型特典の交換履歴を取得
     // 注: reward_exchanges.reward_id の外部キー制約は削除されているため、手動でJOINする
@@ -29,11 +62,26 @@ export async function GET(request: NextRequest) {
       `)
       .eq("is_milestone_based", true)
       .order("exchanged_at", { ascending: false })
-      .limit(50);
+      // 検索時は特定患者の全期間履歴が出るよう上限を広げる（無検索時は直近50件）
+      .limit(search ? 500 : 50);
 
     // ステータスフィルタ
     if (status && (status === "available" || status === "pending" || status === "completed" || status === "cancelled" || status === "expired")) {
       query = query.eq("status", status);
+    }
+
+    // 検索フィルタ（DB側・limit前）: 患者一致 または 特典名一致
+    if (search) {
+      const orParts: string[] = [];
+      if (matchedUserIds && matchedUserIds.length > 0) {
+        orParts.push(`user_id.in.(${matchedUserIds.join(",")})`);
+      }
+      if (matchedRewardIds && matchedRewardIds.length > 0) {
+        orParts.push(`reward_id.in.(${matchedRewardIds.join(",")})`);
+      }
+      if (orParts.length > 0) {
+        query = query.or(orParts.join(","));
+      }
     }
 
     const { data: exchanges, error } = await query;
@@ -92,22 +140,6 @@ export async function GET(request: NextRequest) {
           notes: ex.notes, // スタッフの操作履歴が記録される
           created_at: ex.created_at,
         };
-      })
-      .filter((ex: RewardExchangeWithDetails) => {
-        // 検索フィルタ（患者名・診察券番号・特典名）
-        if (search) {
-          const searchLower = search.toLowerCase();
-          const userName = (ex.user_name || "").toLowerCase();
-          const rewardName = (ex.reward_name || "").toLowerCase();
-          const ticketNumber = (ex.user_medical_record_number || "").toLowerCase();
-
-          return (
-            userName.includes(searchLower) ||
-            rewardName.includes(searchLower) ||
-            ticketNumber.includes(searchLower)
-          );
-        }
-        return true;
       });
 
     return NextResponse.json({ exchanges: formattedExchanges });
