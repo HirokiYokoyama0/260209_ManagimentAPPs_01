@@ -91,6 +91,43 @@ export async function POST(
       );
     }
 
+    // 兄弟の未完了レコードを cancelled 化（Phase B・移行期の取り残し防止・fail-open）
+    // 対象: 同一 (user_id, reward_id, milestone_reached) の status∈{available,pending}（当該id以外）。
+    // ＝ 自動付与availableを残したまま特典交換pendingをcompleteした場合の重複を解消。
+    // 失敗しても引き渡し完了自体は成功扱い（患者影響を出さない）。
+    try {
+      if (existingRecord.is_milestone_based && existingRecord.milestone_reached != null) {
+        const { data: siblings } = await supabase
+          .from("reward_exchanges")
+          .select("id, notes")
+          .eq("user_id", existingRecord.user_id)
+          .eq("reward_id", existingRecord.reward_id)
+          .eq("milestone_reached", existingRecord.milestone_reached)
+          .neq("id", id)
+          .in("status", ["available", "pending"]);
+
+        for (const sib of siblings ?? []) {
+          const dedupNote = `[${new Date().toISOString()}] 同一マイルストーンの重複のため自動キャンセル（id=${id} を引き渡し完了）`;
+          await supabase
+            .from("reward_exchanges")
+            .update({
+              status: "cancelled",
+              notes: sib.notes ? `${sib.notes}\n${dedupNote}` : dedupNote,
+            })
+            .eq("id", sib.id);
+        }
+
+        if (siblings && siblings.length > 0) {
+          console.log(
+            `🧹 兄弟の重複特典を ${siblings.length}件 cancelled 化: user=${existingRecord.user_id} ms=${existingRecord.milestone_reached}`
+          );
+        }
+      }
+    } catch (dedupError) {
+      // fail-open: dedup失敗でも引き渡し完了は成功として続行
+      console.error("⚠️ 兄弟available/pendingのcancel処理に失敗（引き渡し完了自体は成功）:", dedupError);
+    }
+
     await logActivityIfStaff(request, "reward_exchange_complete", {
       targetType: "reward_exchange",
       targetId: id,

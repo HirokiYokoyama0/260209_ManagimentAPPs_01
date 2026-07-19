@@ -196,6 +196,26 @@ export async function grantMilestoneReward(
     throw new Error(`Reward not found for type: ${rewardType}`);
   }
 
+  // 1.5 存在チェック（重複防止・Phase B）:
+  //     同一 (user_id, reward_id, milestone_reached) に有効な特典が既にあれば新規作成しない。
+  //     有効ステータス = available/pending/completed（D-fixの部分ユニーク述語・LIFF側grantと完全一致）。
+  //     ＝ LIFFのgrantMilestoneRewardとダッシュボード([116])の二重付与を防ぐ。
+  const { data: existingRewards } = await supabase
+    .from('reward_exchanges')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('reward_id', reward.id)
+    .eq('milestone_reached', milestone)
+    .in('status', ['available', 'pending', 'completed'])
+    .limit(1);
+
+  if (existingRewards && existingRewards.length > 0) {
+    console.log(
+      `ℹ️ マイルストーン特典は既に存在するため付与skip: ${userId}, ${milestone} (status=${existingRewards[0].status})`
+    );
+    return existingRewards[0];
+  }
+
   // 2. 初回判定（POIC用）
   let isFirstTime = false;
   if (rewardType === RewardType.POIC) {
