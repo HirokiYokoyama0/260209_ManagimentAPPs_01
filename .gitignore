@@ -36,12 +36,15 @@ playwright-report/
 # テストスクリプト（調査用、本番に不要）
 tests/
 
-# 調査・チェック系スクリプト（一時的な調査用、リポジトリに含めない）
-scripts/check-*.ts
-scripts/investigate-*.ts
-scripts/analyze-*.ts
-scripts/compare-*.ts
-scripts/verify-*.ts
+# 調査・チェック・クリーンアップ系スクリプト（一時的な調査用、リポジトリに含めない）
+# 注: アプリ本体は app/ lib/ components/ 配下なので影響なし。scripts/ 配下の .ts のみ除外。
+scripts/*.ts
+
+# 調査データ出力（患者名・診察券番号などを含むため絶対にコミットしない）
+reward-cleanup-plan.csv
+reward-cleanup-backup-*.json
+duplicate-milestone-users.csv
+*-log-export-*.csv
 
 # OS
 .DS_Store

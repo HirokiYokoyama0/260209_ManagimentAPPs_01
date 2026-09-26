@@ -63,11 +63,58 @@ Vercel ダッシュボード → プロジェクト → **Settings** → **Envir
 
 ---
 
-## 6. 参考
+## 6. ログ・監視のための Vercel API アクセス（2026-09-26 追加）
+
+管理ダッシュボード開発者が、**Vercel のデプロイ状態・ビルドログを API 経由で取得**できるようにした。デプロイ確認・障害調査・監視の自動化に使う。
+
+### 6-1. 必要な環境変数（ローカル `.env.local`）
+
+これらは **Vercel ダッシュボードではなく、手元の `.env.local`** に置く（ツール／スクリプトが読む）。
+
+| 変数名 | 説明 | 秘匿 |
+|--------|------|------|
+| `VERCEL_TOKEN` | Vercel アクセストークン | 🔴 **秘密。コミット禁止** |
+| `VERCEL_PROJECT_ID` | プロジェクトID（`prj_Ak8LrHBc7sqiGakebc8PX2SemNtS`） | 公開可 |
+| `VERCEL_TEAM_ID` | チームID（`team_DUhSbD5DdTVtG5E0tGFgIpJ2`） | 公開可 |
+
+- `.env.local` は `.gitignore` 済み（`git check-ignore .env.local` で確認可）。**トークンは絶対にコミットしない。**
+
+### 6-2. トークン発行手順
+
+1. https://vercel.com/account/settings/tokens → **Create Token**
+2. Scope: `hirokiyokoyama0s-projects`（または Full Account）／ Expiration: 期限付き推奨
+3. 発行された文字列を `.env.local` の `VERCEL_TOKEN` に設定
+
+### 6-3. 取得できるもの／できないもの
+
+| 種別 | API | 可否 |
+|------|-----|------|
+| トークン有効性 | `GET /v2/user` | ✅ |
+| デプロイ一覧・状態（READY/ERROR 等） | `GET /v6/deployments?projectId=…&teamId=…` | ✅ |
+| ビルドログ（デプロイ単位・失敗調査） | `GET /v3/deployments/{id}/events` | ✅ |
+| **ランタイム（リクエスト）ログの過去分** | — | ⚠️ API では直近／ライブ寄りで制約あり |
+
+- ランタイムの**リクエスト単位ログ**（例: 特典重複調査で使う `/api/reward-exchanges` の履歴）を過去に遡って見るなら、**Vercel ダッシュボードの "Copy logs"** が最も確実。継続収集が必要なら **Log Drain** を別途設定する。
+
+### 6-4. 動作確認例（トークン値は出力しない）
+
+```bash
+# .env.local の VERCEL_TOKEN を使って、認証と直近デプロイを確認
+curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+  "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID&limit=5"
+```
+
+### 6-5. 疎通確認済み
+
+- **2026-09-26**：アカウント `hirokiyokoyama0` で認証 OK。直近 5 デプロイがすべて `READY`（本番 = 2026-07-19 デプロイ、コミット `b8acd8c` 相当）であることを確認。
+
+---
+
+## 7. 参考
 
 - ローカルでの実行: [実行コマンド.md](実行コマンド.md)
 - 環境変数一覧（ローカル用）: `.env.example` をコピーして `.env.local` を作成
 
 ---
 
-**最終更新:** 2026-02-23
+**最終更新:** 2026-09-26
